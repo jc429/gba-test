@@ -52,8 +52,8 @@ TongueState tongue_state;
 
 GameObj *tongue_tip;
 int base_tile;				// tile_id of the tongue sprite sheet
-#define TONGUE_PIECES 7
-GameObj *tongue_pieces[TONGUE_PIECES];	// the "neck" of the tongue
+#define TONGUE_SEGMENTS 7
+GameObj *tongue_segments[TONGUE_SEGMENTS];	// the "neck" of the tongue
 
 GameObj *tongue_owner;		// playerobj, essentially
 GameObj *attached_obj;		// what obj the tongue is stuck on, if anything
@@ -71,10 +71,10 @@ void tongue_init(GameObj *owner)
 	tongue_len_bonus = 8;
 	tongue_detach();
 
-	for(int i = 0; i < TONGUE_PIECES; i++)
+	for(int i = 0; i < TONGUE_SEGMENTS; i++)
 	{
-		tongue_pieces[i] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_PLAYER, base_tile+TSPR_PIECE_H, pos.x, pos.y, 0);
-		vec2_set(&tongue_pieces[i]->spr_off, -4, 0);
+		tongue_segments[i] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_PLAYER, base_tile+TSPR_PIECE_H, pos.x, pos.y, 0);
+		vec2_set(&tongue_segments[i]->spr_off, -4, 0);
 	}
 	tongue_store();
 }
@@ -219,7 +219,6 @@ void tongue_update_sprites()
 
 	Vector2 t = tongue_owner->tile_pos;
 	gameobj_set_tile_pos(tongue_tip, t.x, t.y);
-
 	gameobj_set_pixel_pos(tongue_tip, p.x, p.y);
 
 	// update tongue pieces 
@@ -228,31 +227,37 @@ void tongue_update_sprites()
 
 
 	// split into an increment length for each piece of tongue
-	int increment = (tonglen + 2) / TONGUE_PIECES;
-	for(int i = 0; i < TONGUE_PIECES; i++)
+	int increment = (tonglen + 2) / TONGUE_SEGMENTS;
+	for(int i = 0; i < TONGUE_SEGMENTS; i++)
 	{
-		if(tongue_extension > 12)
+		if(tongue_extension > 8)
 		{
-			gameobj_unhide(tongue_pieces[i]);
+			gameobj_unhide(tongue_segments[i]);
 		}
 		else{
-			gameobj_hide(tongue_pieces[i]);
+			gameobj_hide(tongue_segments[i]);
 			continue;
 		}
-		Vector2 inc = tongue_owner->pixel_pos;
-		
-		int spr_off = 2;
-		inc.x += (((increment * i) + spr_off) * owner_facing.x);
-		inc.y += (((increment * i) + spr_off) * owner_facing.y);
+		// handle final segment differently to ensure pixel-perfect connection with the tip
+		if(i == TONGUE_SEGMENTS-1)
+		{
+			gameobj_set_tile_pos(tongue_segments[i], t.x, t.y);
+			gameobj_set_pixel_pos(tongue_segments[i], (p.x - (6 * owner_facing.x)), (p.y - (6 * owner_facing.y)));
+			continue;
+		}
+
+		Vector2 seg_pos = tongue_owner->pixel_pos;
+		seg_pos.x += (((increment * i) + 4) * owner_facing.x);
+		seg_pos.y += (((increment * i) + 4) * owner_facing.y);
 		if(owner_facing.y == 0)
 		{
-			int yinc = ((ABS(inc.y) - ABS(p.y)) * i)/ TONGUE_PIECES;
-			inc.y += yinc; 	
+			int yinc = ((ABS(seg_pos.y) - ABS(p.y)) * i)/ TONGUE_SEGMENTS;
+			seg_pos.y += yinc;
 		}
-		gameobj_set_tile_pos(tongue_pieces[i], t.x, t.y);
-		gameobj_set_pixel_pos(tongue_pieces[i], inc.x, inc.y);
+		gameobj_set_tile_pos(tongue_segments[i], t.x, t.y);
+		gameobj_set_pixel_pos(tongue_segments[i], seg_pos.x, seg_pos.y);
 	}
-
+	
 }
 
 
@@ -298,19 +303,19 @@ void tongue_extend()
 	if(dir.x != 0)
 	{
 		tongue_tip->spr_tile_id = base_tile + TSPR_TIP_H;
-		for(int i = 0; i < TONGUE_PIECES; i++)
-			tongue_pieces[i]->spr_tile_id = base_tile + TSPR_PIECE_H;
+		for(int i = 0; i < TONGUE_SEGMENTS; i++)
+			tongue_segments[i]->spr_tile_id = base_tile + TSPR_PIECE_H;
 	}
 	else if(dir.y != 0)
 	{
 		tongue_tip->spr_tile_id = base_tile + TSPR_TIP_V;
-		for(int i = 0; i < TONGUE_PIECES; i++)
-			tongue_pieces[i]->spr_tile_id = base_tile + TSPR_PIECE_V;
+		for(int i = 0; i < TONGUE_SEGMENTS; i++)
+			tongue_segments[i]->spr_tile_id = base_tile + TSPR_PIECE_V;
 	}
 	
 
-	//for(int i = 0; i < TONGUE_PIECES; i++)
-	//	gameobj_unhide(tongue_pieces[i]);
+	//for(int i = 0; i < TONGUE_SEGMENTS; i++)
+	//	gameobj_unhide(tongue_segments[i]);
 	playerobj_play_anim(PAI_TONGUE);
 	audio_play_sound(SFX_FROG_TONGUE);
 	gameobj_unhide(tongue_tip);
@@ -375,8 +380,8 @@ void tongue_store()
 	tongue_len_bonus = 8;
 	tongue_detach();
 
-	for(int i = 0; i < TONGUE_PIECES; i++)
-		gameobj_hide(tongue_pieces[i]);
+	for(int i = 0; i < TONGUE_SEGMENTS; i++)
+		gameobj_hide(tongue_segments[i]);
 	gameobj_hide(tongue_tip);
 
 	playerobj_play_anim(PAI_IDLE);

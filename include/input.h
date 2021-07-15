@@ -13,13 +13,15 @@ typedef enum LockFlag_T {
 } LockFlag;
 
 bool input_locked();
-u8 input_current_lock();
+byte input_current_lock();
 void input_unlock_override_all();
 
-void input_lock(u8 lock_flag);
-void input_unlock(u8 lock_flag);
+void input_lock(byte lock_flag);
+void input_unlock(byte lock_flag);
 
 #define KEY_NONDIR KEY_FIRE|KEY_SHOULDER|KEY_SPECIAL
 
+// if a direction is held less than this number of frames, the player will only change their facing direction instead of moving
+#define INPUT_MOV_BUFFER	7
 
 #endif //INPUT_H

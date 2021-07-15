@@ -3,6 +3,7 @@
 #include "objinteract.h"
 #include "game.h"
 #include "gamedata.h"
+#include "debug.h"
 
 extern void playerobj_set_starting_pos(int pos_x, int pos_y);
 extern  void set_plaque_state(int plaque_id, int p_state);
@@ -175,7 +176,9 @@ void load_level_info()
 {
 	for(int i = 0; i < NUM_LEVELS; i++)
 	{
-		level_info[i] = gamedata_load_byte(SRAM_OFFSET_LEVEL + i);
+		level_info[i] = gamedata_read_byte(SRAM_OFFSET_LEVEL + i);
+		if(DEBUG_UNLOCK_ALL)
+			level_info[i] |= LEVINFO_UNLOCKED;
 	}
 
 	level_info[0] |= LEVINFO_UNLOCKED;
@@ -186,6 +189,6 @@ void save_level_info()
 {
 	for(int i = 0; i < NUM_LEVELS; i++)
 	{
-		gamedata_save_byte(level_info[i], SRAM_OFFSET_LEVEL + i);
+		gamedata_write_byte(level_info[i], SRAM_OFFSET_LEVEL + i);
 	}
 }

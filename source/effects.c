@@ -10,7 +10,8 @@
 
 typedef struct struct_Effect {
 	bool in_use;						// is this effect currently in use?
-	int life_timer;						// how long the effect will last before fading, in anim_frames
+	byte eff_duration;					// how long the effect will last before fading, in anim_frames
+	byte eff_timer;						// remaining life of effect
 	GameObj *obj;						// effect GameObj data
 }Effect;
 
@@ -19,12 +20,10 @@ void effects_anim_update();
 Effect *get_free_effect();
 
 GameObj *eff_templates[ET_COUNT];		// hidden templates for the different effects
+const byte eff_durations[ET_COUNT] = {5, 5, 5, 5};
 #define EFFECTS_MAX 8
 Effect effects[EFFECTS_MAX];			// effects that will be visible in game
 
-#define DUST_TIMER_MAX 5
-
-#define SMOKE_TIMER_MAX 5
 
 void effects_init()
 {
@@ -32,7 +31,8 @@ void effects_init()
 	for(int i = 0; i < EFFECTS_MAX; i++)
 	{
 		effects[i].in_use = false;
-		effects[i].life_timer = 0;
+		effects[i].eff_duration = 0;
+		effects[i].eff_timer = 0;
 		effects[i].obj = gameobj_init();
 	}
 
@@ -74,10 +74,10 @@ void effects_anim_update()
 {
 	for(int i = 0; i < EFFECTS_MAX; i++)
 	{
-		if(effects[i].in_use && effects[i].life_timer > 0)
+		if(effects[i].in_use && effects[i].eff_timer > 0)
 		{
-			effects[i].life_timer--;
-			if(effects[i].life_timer <= 0)
+			effects[i].eff_timer--;
+			if(effects[i].eff_timer <= 0)
 			{
 				gameobj_hide(effects[i].obj);
 				effects[i].in_use = false;
@@ -112,7 +112,8 @@ void create_effect_at_tile(EffectType eff_type, int tile_id)
 	gameobj_set_tile_pos_by_id(eff->obj, tile_id);
 	gameobj_unhide(eff->obj);
 	gameobj_play_anim(eff->obj);
-	eff->life_timer = SMOKE_TIMER_MAX;
+	eff->eff_duration = eff_durations[eff_type];
+	eff->eff_timer = eff->eff_duration;
 }
 
 void create_effect_at_position(EffectType eff_type, int tile_x, int tile_y)
@@ -125,5 +126,6 @@ void create_effect_at_position(EffectType eff_type, int tile_x, int tile_y)
 	gameobj_set_tile_pos(eff->obj, tile_x, tile_y);
 	gameobj_unhide(eff->obj);
 	gameobj_play_anim(eff->obj);
-	eff->life_timer = SMOKE_TIMER_MAX;
+	eff->eff_duration = eff_durations[eff_type];
+	eff->eff_timer = eff->eff_duration;
 }

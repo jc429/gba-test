@@ -2,29 +2,57 @@
 #include "gamedata.h"
 #include "debug.h"
 
+
+// tonc SRAM isn't marked volatile and that causes issues lol
+#define v_SRAM ((volatile unsigned char *)0x0E000000)
 // (basically my answer to not knowing what SRAM first initializes with, but also can ensure data compatibility with version changes)
-#define SRAM_KEY	0xAD		// "unique" key || if first byte of SRAM is not set to this, erase everything 
+#define SRAM_KEY_COUNT	8
+const byte sram_keys[SRAM_KEY_COUNT] = {0xEE, 0xAB, 0xB0, 0x54, 0x66, 0xAA, 0xFF, 0x02};	// "unique" keys || if first byte of SRAM is not set to these, erase everything 
 
-void clear_all_sram();
 
+void gamedata_clear_all_sram();
+void gamedata_write_keys();
+bool gamedata_check_keys();
 
 
 void gamedata_init()
 {
-	byte key = gamedata_load_byte(0);
-	if(DEBUG_CLEAR_SRAM || (key != SRAM_KEY))
+	if(DEBUG_CLEAR_SRAM || !gamedata_check_keys())
 	{
-		clear_all_sram();
+		gamedata_clear_all_sram();
 	}
-	gamedata_save_byte(SRAM_KEY, 0);
+	gamedata_write_keys();
 }
 
-void clear_all_sram()
+
+void gamedata_clear_all_sram()
 {
 	for(int i = 0; i < SRAM_SIZE; i++)
 	{
-		sram_mem[i] = 0;
+		v_SRAM[i] = 0;
 	}
+}
+
+
+
+void gamedata_write_keys()
+{
+	for(int i = 0; i < SRAM_KEY_COUNT; i++)
+	{
+		gamedata_write_byte(sram_keys[i], SRAM_OFFSET_KEY + i);
+		
+	}
+}
+
+bool gamedata_check_keys()
+{
+	for(int i = 0; i < SRAM_KEY_COUNT; i++)
+	{
+		byte b = gamedata_read_byte(SRAM_OFFSET_KEY + i);
+		if(b != sram_keys[i])
+			return false;
+	}
+	return true;
 }
 
 ///////////////////
@@ -35,12 +63,12 @@ void clear_all_sram()
 // byte r/w only
 
 
-void gamedata_save_byte(byte data, int mem_offset)
+void gamedata_write_byte(byte data, int mem_offset)
 { 
-	sram_mem[mem_offset] = data;
+	v_SRAM[mem_offset] = data;
 }
 
-byte gamedata_load_byte(int mem_offset)
+byte gamedata_read_byte(int mem_offset)
 {
-	return (byte)sram_mem[mem_offset];
+	return (byte)v_SRAM[mem_offset];
 }

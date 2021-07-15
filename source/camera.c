@@ -1,12 +1,13 @@
 #include <tonc.h>
 #include "game.h"
 #include "map.h"
+#include "vector2.h"
 #include "gameobj.h"
 
 #define SCREEN_HALF_WIDTH 			120		// half screen width
 #define SCREEN_HALF_HEIGHT 			80		// half screen height
-#define CAMERA_BOUNDS_HORIZONTAL	24
-#define CAMERA_BOUNDS_VERTICAL		24
+#define CAMERA_BOUNDS_HORIZONTAL	56		// 2.5 tiles
+#define CAMERA_BOUNDS_VERTICAL		56
 #define PLAYER_SIZE					16		// player size in pixels
 
 
@@ -15,6 +16,7 @@ void camera_update_pos();
 void camera_set_target(GameObj *target);
 void camera_find_target(GameObj *target);
 void camera_center();
+void camera_push_changes();
 
 extern void set_world_offset(int off_x, int off_y);
 
@@ -29,18 +31,17 @@ static GameObj *cam_target;
 
 void set_camera_pos(int target_x, int target_y)
 {
-	int cam_x = world_offset_x + SCREEN_HALF_WIDTH;
-	int cam_y = world_offset_y + SCREEN_HALF_HEIGHT;
-	
+	Vector2 pos;
 	//try to constrain player within camera bounds
-	cam_x = clamp(cam_x, target_x - cam_bound_h + PLAYER_SIZE, target_x + cam_bound_h);
-	cam_y = clamp(cam_y, target_y - cam_bound_v + PLAYER_SIZE, target_y + cam_bound_v);
+	pos.x = clamp(world_offset_x + SCREEN_HALF_WIDTH, target_x - cam_bound_h + PLAYER_SIZE, target_x + cam_bound_h);
+	pos.y = clamp(world_offset_y + SCREEN_HALF_HEIGHT, target_y - cam_bound_v + PLAYER_SIZE, target_y + cam_bound_v);
 	
 	//maintain map bounds above all else
-	cam_x = clamp(cam_x, SCREEN_HALF_WIDTH, (MAP_SIZE_X * GAME_TILE_SIZE) - SCREEN_HALF_WIDTH);
-	cam_y = clamp(cam_y, SCREEN_HALF_HEIGHT, (MAP_SIZE_Y * GAME_TILE_SIZE) - SCREEN_HALF_HEIGHT);
+	pos.x = clamp(pos.x, SCREEN_HALF_WIDTH, (MAP_SIZE_X * GAME_TILE_SIZE) - SCREEN_HALF_WIDTH);
+	pos.y = clamp(pos.y, SCREEN_HALF_HEIGHT, (MAP_SIZE_Y * GAME_TILE_SIZE) - SCREEN_HALF_HEIGHT);
 	
-	set_world_offset(cam_x - SCREEN_HALF_WIDTH, cam_y - SCREEN_HALF_HEIGHT);
+	// subtract halfbounds to get top left corner again
+	set_world_offset(pos.x - SCREEN_HALF_WIDTH, pos.y - SCREEN_HALF_HEIGHT);
 }
 
 void camera_update_pos()
@@ -66,7 +67,5 @@ void camera_find_target(GameObj *target)
 void camera_center()
 {
 	//set_camera_pos(128,128);
-
-
 	set_world_offset(8, 46);
 }

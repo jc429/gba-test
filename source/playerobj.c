@@ -76,7 +76,7 @@ static Vector2 mov;				// x and y speed+direction of current movement
 static int hop_time;			
 static int hop_offset;			// number of pixels to shove sprite vertically to simulate hopping
 
-#define MOV_BUFFER_MAX	8
+
 static int mov_buffer;			// small buffer after changing facing direction but before moving
 
 
@@ -208,7 +208,7 @@ void playerobj_input_direction(int input_x, int input_y)
 	
 	// TODO: add a ~3 frame buffer for the input to be held before committing to movement
 	mov_buffer++;
-	if(mov_buffer >= MOV_BUFFER_MAX)
+	if(mov_buffer >= INPUT_MOV_BUFFER)
 		playerobj_move(input_x, input_y);
 }
 

@@ -46,6 +46,10 @@ void mem_clear_tiles()
 }
 
 
+//int mem_load_compressed_tiles(const ushort *tile_data, int data_len)
+//{
+//	RLUnCompVram()
+//}
 
 
 /////////////////////////
