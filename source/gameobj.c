@@ -124,15 +124,17 @@ GameObj *create_gameobj_with_id(u8 obj_id)
 {
 	GameObj *obj = &obj_list[obj_id];
 	obj->game_obj_id = OBJ_USE_MASK | obj_id;
+	obj->attr = &objattr_buffer[obj_id];
 	//obj->in_use = 1;
 	//obj->obj_id = obj_id;
-	obj->attr = &objattr_buffer[obj_id];
 	//obj->pal_bank_id = 0;
 	//obj->spr_tile_id = 0;
 	//obj->layer_priority = LAYER_GAMEOBJ;
 	gameobj_set_layer_priority(obj, LAYER_GAMEOBJ);
-	obj->spr_shape = ATTR0_SQUARE;
-	obj->spr_size = ATTR1_SIZE_16x16;	// assume 16x6 for default bc I really doubt anyone is regularly making 16x8 objects 
+	gameobj_set_sprite_shape(obj, ATTR0_SQUARE);
+	gameobj_set_sprite_size(obj, ATTR1_SIZE_16x16);
+	//obj->spr_shape = ATTR0_SQUARE;
+	//obj->spr_size = ATTR1_SIZE_16x16;	// assume 16x6 for default bc I really doubt anyone is regularly making 16x8 objects 
 
 	obj->tile_pos.x = 0;
 	obj->tile_pos.y = 0;
@@ -168,8 +170,10 @@ GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, 
 	//obj->pal_bank_id = palbank;
 	//obj->spr_tile_id = spr_tile_id;
 	obj->base_sprite_id = spr_id;
-	obj->spr_shape = attr0_shape;
-	obj->spr_size = attr1_size;
+	
+	
+	//obj->spr_shape = attr0_shape;
+	//obj->spr_size = attr1_size;
 	obj->obj_properties = properties;
 	obj->hist = NULL;
 	obj->spr_off.x = 0;
@@ -193,7 +197,11 @@ GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, 
 		obj->pixel_pos.y = 0;
 	}
 
-	obj_set_attr(obj->attr, obj->spr_shape, obj->spr_size, ATTR2_BUILD(spr_id, palbank, 0));
+	// i don't understand why i have to go through set_attr instead of the gameobj_set_sprite functions, but whatever it works
+	obj_set_attr(obj->attr, attr0_shape, attr1_size, ATTR2_BUILD(spr_id, palbank, gameobj_get_layer_priority(obj)));
+	//gameobj_set_sprite_shape(obj, attr0_shape);
+	//gameobj_set_sprite_size(obj, attr1_size);
+	//obj->attr->attr2 = ATTR2_BUILD(spr_id, palbank, 0);
 	gameobj_update_pos(obj);
 
 	return obj;
@@ -217,8 +225,9 @@ GameObj *gameobj_clone(GameObj *dest, GameObj *src)
 	//dest->layer_priority = src->layer_priority;
 	//dest->spr_tile_id = src->spr_tile_id;
 	//dest->pal_bank_id = src->pal_bank_id;
-	dest->spr_shape = src->spr_shape;
-	dest->spr_size = src->spr_size;
+	//dest->spr_shape = src->spr_shape;
+	//dest->spr_size = src->spr_size;
+	
 
 	dest->tile_pos = src->tile_pos;
 	dest->pixel_pos = src->pixel_pos;
@@ -250,8 +259,8 @@ void gameobj_erase(GameObj *obj)
 	//obj->pal_bank_id = 0;
 	//obj->spr_tile_id = 0;
 	//obj->layer_priority = 0;
-	obj->spr_shape = 0;
-	obj->spr_size = 0;
+	//obj->spr_shape = 0;
+	//obj->spr_size = 0;
 
 	obj->tile_pos.x = 0;
 	obj->tile_pos.y = 0;
@@ -275,8 +284,8 @@ void gameobj_update_attr(GameObj *obj)
 void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, int x, int y, u16 properties)
 {
 	obj->base_sprite_id = spr_id;
-	obj->spr_shape = attr0_shape;
-	obj->spr_size = attr1_size;
+	//obj->spr_shape = attr0_shape;
+	//obj->spr_size = attr1_size;
 	//obj->pal_bank_id = palbank;
 	//obj->spr_tile_id = spr_tile_id;
 	obj->obj_properties = properties;
