@@ -13,6 +13,6 @@ typedef enum EffectType_T {
 
 
 void create_effect_at_tile(EffectType eff_type, int tile_id);
-void create_effect_at_position(EffectType eff_type, int tile_x, int tile_y);
+void create_effect_at_position(EffectType eff_type, int tile_x, int tile_y, int facing);
 
 #endif //EFFECTS_H

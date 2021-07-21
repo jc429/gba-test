@@ -16,8 +16,6 @@ typedef struct MapTile_T{
 } MapTile;
 
 
-
-
 void map_tile_clear(MapTile *tile);
 void map_tile_clear_contents(MapTile *tile);
 void map_clear_tile_properties();
@@ -29,12 +27,6 @@ void map_clear_contents();
 static MapData current_map;
 static MapData current_overlay;
 MapTile map_tiles[MAP_SIZE];
-
-// collision data for map
-//unsigned short map_collision_info[MAP_SIZE];
-// gameobj data
-//GameObj *map_contents[MAP_SIZE];
-
 
 
 

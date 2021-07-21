@@ -41,6 +41,7 @@
 		"map4.h": "c",
 		"map3overlay.h": "c",
 		"map5.h": "c",
-		"map8overlay.h": "c"
+		"map8overlay.h": "c",
+		"eff_dust.h": "c"
 	}
 }

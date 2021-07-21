@@ -9,7 +9,7 @@ void timer_init(Timer *timer, int duration, void(*end_callback)(), u8 flags)
 	timer->duration = duration;
 	timer->time = duration;
 	timer->end_callback = end_callback;
-	timer->flags = flags;
+	timer->flags = flags | TIMERFLAG_IN_USE;	// safe to set in-use when initializing
 }
 
 void timer_update(Timer *timer)
@@ -20,7 +20,8 @@ void timer_update(Timer *timer)
 	if(timer->time <= 0)
 	{
 		timer->time = 0;
-		timer->end_callback();
+		if(timer->end_callback != NULL)
+			timer->end_callback();
 		if(timer->flags & TIMERFLAG_LOOP)
 			timer_reset(timer);
 		else

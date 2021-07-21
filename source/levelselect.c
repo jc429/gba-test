@@ -31,7 +31,7 @@ void set_plaque_state(int plaque_id, int p_state);
 
 
 #define LEVELS_PER_ROW		4
-#define ROWS_PER_PAGE		2
+#define ROWS_PER_PAGE		4
 #define LEVELS_PER_PAGE		(LEVELS_PER_ROW*ROWS_PER_PAGE)
 
 #define LEV_SEL_PADDING_X 32

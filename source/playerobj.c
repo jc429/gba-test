@@ -326,7 +326,7 @@ void playerobj_move(int move_x, int move_y)
 			if(gameobj_get_facing(player_obj) != mov_dir)
 			{
 				audio_play_sound(SFX_PUSH_BLOCK);
-				create_effect_at_position(ET_SMOKE, obj_att->tile_pos.x, obj_att->tile_pos.y);
+				create_effect_at_position(ET_SMOKE, obj_att->tile_pos.x, obj_att->tile_pos.y, 0);
 				gameobj_set_moving(obj_att, true, mov_dir);
 			}
 			// if moving toward obj_att, contract tongue

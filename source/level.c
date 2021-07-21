@@ -8,7 +8,6 @@
 extern void playerobj_set_starting_pos(int pos_x, int pos_y);
 extern  void set_plaque_state(int plaque_id, int p_state);
 
-#define NUM_LEVELS_JAM		8			// three cheers for cut corners 
 #define NUM_LEVELS			16
 #define LEVINFO_UNLOCKED	0x01
 #define LEVINFO_CLEARED		0x02
@@ -56,8 +55,8 @@ void set_level_data(int level_id)
 			set_overlay_data(map8overlayTiles, map8overlayTilesLen, map8overlayMap, map8overlayMapLen);
 			break;
 		default:
-			set_map_data(level_id, map1Pal, map1Tiles, map1TilesLen, map1Map, map1MapLen, map1Col);
-			set_overlay_data(map1overlayTiles, map1overlayTilesLen, map1overlayMap, map1overlayMapLen);
+			set_map_data(level_id, map4Pal, map4Tiles, map4TilesLen, map4Map, map4MapLen, map4Col);
+			set_overlay_data(map4overlayTiles, map4overlayTilesLen, map4overlayMap, map4overlayMapLen);
 			//set_map_data(level_id, testmapPal, testmapTiles, testmapTilesLen, testmapMap, testmapMapLen, testmapCol);
 			//overlay_clear();
 			break;
@@ -122,9 +121,12 @@ void load_map_objs(int level_id)
 			intobj_create_crate_at_position(8,6);
 			break;
 		default:
-			player_start_x = 10;
-			player_start_y = 5;
-			floorobj_create_victory_tile_at_position(10,5);
+			player_start_x = 4;
+			player_start_y = 10;
+			floorobj_create_victory_tile_at_position(3,12);
+			intobj_create_crate_at_position(6,10);
+			intobj_create_crate_at_position(9,10);
+			intobj_create_crate_at_position(4,6);
 			break;
 	}
 
@@ -148,7 +150,7 @@ void level_restart()
 void set_level_unlocked(int level_id)
 {
 	//set_plaque_state(level_id, 2);
-	if(level_id >= NUM_LEVELS_JAM)
+	if(level_id >= NUM_LEVELS)
 		return;
 	level_info[level_id] |= LEVINFO_UNLOCKED;
 }

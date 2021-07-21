@@ -10,6 +10,6 @@
 struct struct_Vector2 dir_to_vec(int direction);
 int vec_to_dir(struct struct_Vector2 v);
 int ints_to_dir(int x, int y);
-
+int dir_opposite(int dir);
 
 #endif //DIRECTION_H

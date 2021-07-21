@@ -65,6 +65,7 @@ Animation *anim_init(Animation *anim, AnimationData *anim_data, u8 anim_flags)
 	anim->anim_data = anim_data;
 	anim->flags = anim_flags;
 	anim->cur_frame = 0;
+	anim->anim_end_func = NULL;
 	return anim;
 }
 
@@ -75,6 +76,7 @@ Animation *anim_clear(Animation *anim)
 	anim->anim_data = NULL;
 	anim->flags = 0;
 	anim->cur_frame = 0;
+	anim->anim_end_func = NULL;
 	return anim;
 }
 
@@ -98,6 +100,8 @@ void anim_update(Animation *anim)
 			anim_stop(anim);
 			if((anim->flags & ANIM_FLAG_CLAMP) == 0)
 				anim->cur_frame = next_frame;
+			if(anim->anim_end_func != NULL)
+				anim->anim_end_func();
 		}
 		else
 			anim->cur_frame = next_frame;

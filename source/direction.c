@@ -57,3 +57,11 @@ int ints_to_dir(int x, int y)
 	else
 		return 0;
 }
+
+int dir_opposite(int dir)
+{
+	if(dir == DIRECTION_NORTH || dir == DIRECTION_WEST)
+		return dir-1;
+	else
+		return dir+1;
+}

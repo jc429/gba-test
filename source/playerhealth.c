@@ -2,6 +2,7 @@
 #include "playerhealth.h"
 #include "objhistory.h"
 #include "audio.h"
+#include "debug.h"
 
 
 extern void playerobj_damaged_start();
@@ -41,7 +42,8 @@ void playerhealth_damage_check()
 	if(player_damaged || player_dead) return;
 	if(player_damaged)
 	{
-		player_health--;
+		if(!DEBUG_UNLIMITED_HP)
+			player_health--;
 		audio_play_sound(SFX_FROG_HIT);
 		// TODO: maybe change this to not rewind? 
 		history_step_back(1);
@@ -81,5 +83,6 @@ void playerhealth_heal(int heal_amt)
 
 void playerhealth_reduce_hp(int dmg_amt)
 {
-	player_health = clamp(player_health - dmg_amt, 0, PLAYER_HP_MAX);
+	if(!DEBUG_UNLIMITED_HP)
+		player_health = clamp(player_health - dmg_amt, 0, PLAYER_HP_MAX);
 }

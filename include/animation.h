@@ -15,6 +15,7 @@ typedef struct struct_Animation {
 	AnimationData *anim_data;		// 
 	u8 flags;						// flags for various animation properties
 	u16 cur_frame;					// current frame of current animation
+	void (*anim_end_func)();
 }Animation;	
 
 

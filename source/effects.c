@@ -1,9 +1,10 @@
 #include "effects.h"
 #include "regmem.h"
+#include "direction.h"
 #include "palettes.h"
 #include "game.h"
 #include "gameobj.h"
-#include "sprites/effects/dustcloud.h"
+#include "sprites/effects/eff_dust.h"
 #include "sprites/effects/eff_smoke.h"
 #include "sprites/effects/eff_sparkle.h"
 #include "sprites/effects/eff_teleport.h"
@@ -39,9 +40,11 @@ void effects_init()
 	
 
 	// dust
-	int dust_tile = mem_load_tiles(dustcloudTiles, dustcloudTilesLen);
-	eff_templates[ET_DUST] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_EFF, dust_tile, 0, 0, 0);
-	gameobj_set_sprite_offset(eff_templates[ET_DUST], 0, 0);
+	int dust_tile = mem_load_tiles(eff_dustTiles, eff_dustTilesLen);
+	eff_templates[ET_DUST] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_EFF, dust_tile, 0, 0, 0);
+	gameobj_set_sprite_offset(eff_templates[ET_DUST], -8, -8);
+	AnimationData *dust_animdata = animdata_create(dust_tile, ANIM_OFFSET_8x8, 4, 0);
+	gameobj_set_anim_data(eff_templates[ET_DUST], dust_animdata, ANIM_FLAG_CLAMP);
 	gameobj_hide(eff_templates[ET_DUST]);
 
 	// init smoke_cloud
@@ -116,7 +119,7 @@ void create_effect_at_tile(EffectType eff_type, int tile_id)
 	eff->eff_timer = eff->eff_duration;
 }
 
-void create_effect_at_position(EffectType eff_type, int tile_x, int tile_y)
+void create_effect_at_position(EffectType eff_type, int tile_x, int tile_y, int facing)
 {
 	Effect *eff = get_free_effect();
 	// if no free effect slots, dont bother
@@ -125,6 +128,8 @@ void create_effect_at_position(EffectType eff_type, int tile_x, int tile_y)
 	gameobj_clone(eff->obj, eff_templates[eff_type]);
 	gameobj_set_tile_pos(eff->obj, tile_x, tile_y);
 	gameobj_unhide(eff->obj);
+	if(facing == DIRECTION_WEST)
+		gameobj_set_flip_h(eff->obj, true);
 	gameobj_play_anim(eff->obj);
 	eff->eff_duration = eff_durations[eff_type];
 	eff->eff_timer = eff->eff_duration;

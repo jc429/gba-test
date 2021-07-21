@@ -51,11 +51,7 @@ void audio_play_track(int track_id)
 	if(track_id < 0 || track_id >= MSL_NSONGS)
 		track_id = 0;
 
-	if(track_id == MOD_TITLE_THEME)
-	{
-//		mmSetModuleVolume(384);
-//		mmSetModuleTempo(512);
-	}
+
 	mmStart(track_id, MM_PLAY_LOOP);
 }
 

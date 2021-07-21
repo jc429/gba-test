@@ -145,7 +145,7 @@ void tongue_update_length()
 				if(tongue_extension - EXT_SPD <= tongue_len_bonus)
 				{
 					gameobj_change_pixel_pos(attached_obj, owner_facing.x * (tongue_len_bonus - tongue_extension), owner_facing.y * (tongue_len_bonus - tongue_extension));
-					gameobj_update_current_tile(attached_obj);
+					gameobj_update_current_tile(attached_obj);	// might need to check tile safety here
 					history_update_all();
 				}
 				else
@@ -238,17 +238,23 @@ void tongue_update_sprites()
 			gameobj_hide(tongue_segments[i]);
 			continue;
 		}
+
+		Vector2 seg_pos = tongue_owner->pixel_pos;
 		// handle final segment differently to ensure pixel-perfect connection with the tip
 		if(i == TONGUE_SEGMENTS-1)
 		{
-			gameobj_set_tile_pos(tongue_segments[i], t.x, t.y);
-			gameobj_set_pixel_pos(tongue_segments[i], (p.x - (6 * owner_facing.x)), (p.y - (6 * owner_facing.y)));
-			continue;
+			//gameobj_set_tile_pos(tongue_segments[i], t.x, t.y);
+			//gameobj_set_pixel_pos(tongue_segments[i], (p.x - (6 * owner_facing.x)), (p.y - (6 * owner_facing.y)));
+			seg_pos.x = (p.x - (6 * owner_facing.x));
+			seg_pos.y = (p.y - (6 * owner_facing.y));
+			// TODO: fix this tongue segment while hopping
 		}
-
-		Vector2 seg_pos = tongue_owner->pixel_pos;
-		seg_pos.x += (((increment * i) + 4) * owner_facing.x);
-		seg_pos.y += (((increment * i) + 4) * owner_facing.y);
+		else
+		{
+			seg_pos.x += (((increment * i) + 4) * owner_facing.x);
+			seg_pos.y += (((increment * i) + 4) * owner_facing.y);
+		}
+		// if facing horizontal, adjust for hop height
 		if(owner_facing.y == 0)
 		{
 			int yinc = ((ABS(seg_pos.y) - ABS(p.y)) * i)/ TONGUE_SEGMENTS;
@@ -331,7 +337,7 @@ void tongue_retract()
 		if(tongue_max_tl > 0)
 		{
 			audio_play_sound(SFX_PUSH_BLOCK);
-			create_effect_at_position(ET_SMOKE, attached_obj->tile_pos.x, attached_obj->tile_pos.y);
+			create_effect_at_position(ET_SMOKE, attached_obj->tile_pos.x, attached_obj->tile_pos.y, gameobj_get_facing(tongue_owner));
 		}
 		tongue_state = TS_PULLING_OBJ;
 		input_lock(INPLCK_TONGUE);
