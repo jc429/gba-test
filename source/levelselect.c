@@ -127,7 +127,7 @@ void load_level_select_ui()
 
 void unload_level_select_ui()
 {
-	mem_free_palette(cursor->pal_bank_id);
+	mem_free_palette(gameobj_get_pal_id(cursor));
 	gameobj_erase(cursor);
 }
 
@@ -169,5 +169,6 @@ void update_cursor_position()
 void set_plaque_state(int plaque_id, int p_state)
 {
 	p_state = clamp(p_state, 0, 4);
-	level_plaques[plaque_id]->spr_tile_id = plaque_tile + (4*p_state);
+	gameobj_set_base_spr_id(level_plaques[plaque_id], plaque_tile + (4*p_state));
+	//level_plaques[plaque_id]->spr_tile_id = plaque_tile + (4*p_state);
 }

@@ -413,6 +413,8 @@ int time_charges_check()
 
 bool time_charge_use()
 {
+	if(DEBUG_UNLIMITED_GAUGE)
+		return true;
 	if(time_charges > 0)
 	{
 		time_charges--;

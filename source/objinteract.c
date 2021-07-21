@@ -45,7 +45,7 @@ void objint_push_gameobj(GameObj *obj, int push_dir)
 		return;
 	gameobj_set_moving(obj, true, push_dir);
 	audio_play_sound(SFX_PUSH_BLOCK);
-	create_effect_at_position(ET_SMOKE, obj->tile_pos.x, obj->tile_pos.y);
+	create_effect_at_position(ET_SMOKE, obj->tile_pos.x, obj->tile_pos.y, 0);
 	//create_effect_at_position(obj->tile_pos.x, obj->tile_pos.y);
 }
 
@@ -57,7 +57,7 @@ void objint_collect(GameObj *target, GameObj *instigator)
 		return;
 	// TODO: Apply Collect Effect
 	audio_play_sound(SFX_COLLECT_COIN);
-	create_effect_at_position(ET_SMOKE, target->tile_pos.x, target->tile_pos.y);
+	create_effect_at_position(ET_SMOKE, target->tile_pos.x, target->tile_pos.y, 0);
 	remove_tile_contents(target, target->tile_pos.x, target->tile_pos.y);
 	gameobj_erase(target);
 }

@@ -6,22 +6,25 @@
 #include "animation.h"
 
 
-
+#define OBJ_USE_MASK		0x80
+#define OBJ_ID_MASK			0x7F
 
 typedef struct struct_GameObj {
-	u8 in_use;							// if zero, GameObj is free to be overwritten
-	int obj_id;
+	u8 game_obj_id;						// first bit: in use or not || other 7 bits: actual obj id
 	OBJ_ATTR *attr;
 
 	//u16 attr0;						// AABC DDEE FFFF FFFF || A = SHAPE, B = COLORMODE, C = MOSAIC, D = GFXMODE, E = OBJMODE, F = YPOS
 	//u16 attr1;						// AABC xxxD DDDD DDDD || A = SIZE, B = VFLIP, C = HFLIP, D = XPOS || BCxxx = AFFINDEX
 	//u16 attr2;						// AAAA BBCC CCCC CCCC || A = PALBANK, B = PRIORITY, C = TILEINDEX
+	
+	// these are literally attr2
+	//u16 spr_tile_id;					// index of upperleft tile in obj memory (SIZE: 10 bits)
+	//u8 pal_bank_id;						// index of palette in pal memory (SIZE: 4 bits)
+	//u8 layer_priority;					// draw order layer_priority in layer (0 = drawn on top) (SIZE: 2 bits)
+	u16 base_sprite_id;
 
-	u32 spr_tile_id;						// index of upperleft tile in obj memory
-	u16 pal_bank_id;					// index of palette in pal memory
-	u8 layer_priority;					// draw order layer_priority in layer (0 = drawn on top)
-	u16 spr_shape;						// shape of sprite
-	u16 spr_size;						// size of sprite
+	u16 spr_shape;						// shape of sprite (SIZE: 9 bits)
+	u16 spr_size;						// size of sprite (SIZE: 9 bits)
 	
 	Vector2 tile_pos;					// position on map (in tiles) || ignored in FIXED_POS mode
 	Vector2 pixel_pos;					// position relative to tile (in pixels) or position on screen if in FIXED_POS mode
@@ -32,6 +35,16 @@ typedef struct struct_GameObj {
 	Animation anim;						// animation info
 	struct struct_ObjHistory *hist;		// object history - used for time travel
 } GameObj;
+
+inline bool get_obj_used(GameObj *obj)
+{
+	return (obj->game_obj_id & OBJ_USE_MASK) > 0;
+};
+
+inline bool get_obj_id(GameObj *obj)
+{
+	return (obj->game_obj_id & OBJ_ID_MASK);
+};
 
 /////////////////////////
 /// Object Properties ///
@@ -62,7 +75,7 @@ inline u16 objprop_ignore_time(GameObj *obj)
 
 
 GameObj *gameobj_init();
-GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u16 palbank, u32 spr_tile_id, int x, int y, u16 properties);
+GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, int x, int y, u16 properties);
 GameObj *gameobj_duplicate(GameObj *src);															// duplicate a GameObj into another slot in memory
 GameObj *gameobj_clone(GameObj *dest, GameObj *src);												// copy all attributes of a GameObj into another existing GameObj
 void gameobj_erase(GameObj *obj);																	// wipe all attributes of a GameObj and mark it as unused
@@ -70,7 +83,7 @@ void gameobj_erase_all();																			// wipe all attributes of all GameOb
 
 void gameobj_main_update(GameObj *obj);
 void gameobj_update_attr(GameObj *obj);
-void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u16 palbank, u32 spr_tile_id, int x, int y, u16 properties);
+void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, int x, int y, u16 properties);
 
 void gameobj_set_property_flags(GameObj *obj, u16 properties);
 void gameobj_add_property_flags(GameObj *obj, u16 properties);
@@ -116,5 +129,53 @@ void gameobj_hide_all();
 void gameobj_unhide_all();
 
 bool gameobj_is_player(GameObj *obj);													// checks whether or not a given GameObj is the PlayerObj
+
+
+////////////////////////////////////////
+/// Inline functions for Sprite Data ///
+////////////////////////////////////////
+	//u16 spr_tile_id;						// index of upperleft tile in obj memory (SIZE: 10 bits)
+	//u8 pal_bank_id;						// index of palette in pal memory (SIZE: 4 bits)
+	//u8 layer_priority;					// draw order layer_priority in layer (0 = drawn on top) (SIZE: 2 bits)
+
+inline u16 gameobj_get_sprite_id(GameObj *obj)
+{
+	return ((obj->attr->attr2)>>ATTR2_ID_SHIFT)&ATTR2_ID_MASK;
+};
+
+inline void gameobj_set_sprite_id(GameObj *obj, u16 spr_id)
+{
+	obj->attr->attr2 = ((obj->attr->attr2 & ~ATTR2_ID_MASK) | ATTR2_ID(spr_id&ATTR2_ID_MASK));
+};
+
+inline void gameobj_set_base_spr_id(GameObj *obj, u16 spr_id)
+{
+	obj->base_sprite_id = spr_id;
+};
+
+inline u16 gameobj_get_base_spr_id(GameObj *obj)
+{
+	return obj->base_sprite_id;
+};
+
+inline u8 gameobj_get_pal_id(GameObj *obj)
+{
+	return ((obj->attr->attr2)>>ATTR2_PALBANK_SHIFT)&0x0F;
+};
+
+inline void gameobj_set_pal_id(GameObj *obj, u8 pal)
+{
+	obj->attr->attr2 = ((obj->attr->attr2 & ~ATTR2_PALBANK_MASK) | ATTR2_PALBANK(pal&0x0F));
+};
+
+inline u8 gameobj_get_layer_priority(GameObj *obj)
+{
+	return ((obj->attr->attr2)>>ATTR2_PRIO_SHIFT)&0x03;
+};
+
+inline void gameobj_set_layer_priority(GameObj *obj, u8 layer)
+{
+	obj->attr->attr2 = ((obj->attr->attr2 & ~ATTR2_PRIO_MASK) | ATTR2_PRIO(layer&0x03));
+};
 
 #endif //GAMEOBJ_H

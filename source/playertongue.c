@@ -308,15 +308,19 @@ void tongue_extend()
 
 	if(dir.x != 0)
 	{
-		tongue_tip->spr_tile_id = base_tile + TSPR_TIP_H;
+		gameobj_set_base_spr_id(tongue_tip, base_tile + TSPR_TIP_H);
+		//tongue_tip->spr_tile_id = base_tile + TSPR_TIP_H;
 		for(int i = 0; i < TONGUE_SEGMENTS; i++)
-			tongue_segments[i]->spr_tile_id = base_tile + TSPR_PIECE_H;
+			gameobj_set_base_spr_id(tongue_segments[i], base_tile + TSPR_PIECE_H);
+			//tongue_segments[i]->spr_tile_id = base_tile + TSPR_PIECE_H;
 	}
 	else if(dir.y != 0)
 	{
-		tongue_tip->spr_tile_id = base_tile + TSPR_TIP_V;
+		gameobj_set_base_spr_id(tongue_tip, base_tile + TSPR_TIP_V);
+		//tongue_tip->spr_tile_id = base_tile + TSPR_TIP_H;
 		for(int i = 0; i < TONGUE_SEGMENTS; i++)
-			tongue_segments[i]->spr_tile_id = base_tile + TSPR_PIECE_V;
+			gameobj_set_base_spr_id(tongue_segments[i], base_tile + TSPR_PIECE_V);
+			//tongue_segments[i]->spr_tile_id = base_tile + TSPR_PIECE_H;
 	}
 	
 

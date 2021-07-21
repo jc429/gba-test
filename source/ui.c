@@ -90,7 +90,8 @@ void ui_init()
 	for(int i = 0; i < ACTION_COUNTER_DIGITS; i++)
 	{
 		action_counter[i] = gameobj_init();
-		action_counter[i]->layer_priority = LAYER_OVERLAY;
+		gameobj_set_layer_priority(action_counter[i], LAYER_OVERLAY);
+		//action_counter[i]->layer_priority = LAYER_OVERLAY;
 		int ac_x = ACTION_COUNTER_OFFSET_X + i*8;
 		int ac_y = ACTION_COUNTER_OFFSET_Y + 152;
 		gameobj_update_attr_full(action_counter[i], ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_UI, a_tile, ac_x, ac_y, OBJPROP_FIXED_POS);
@@ -103,7 +104,8 @@ void ui_init()
 	for(int i = 0; i < TIME_GAUGE_SEGMENTS; i++)
 	{
 		time_gauge[i] = gameobj_init();
-		time_gauge[i]->layer_priority = LAYER_OVERLAY;
+		gameobj_set_layer_priority(time_gauge[i], LAYER_OVERLAY);
+		//time_gauge[i]->layer_priority = LAYER_OVERLAY;
 		int tg_x = 26 + (i*8);
 		int tg_y = SCREEN_HEIGHT - 12;
 		int tg_t = t_tile + (2*TG_END_OFFSET_L);
@@ -122,6 +124,7 @@ void ui_init()
 		int h_x = (i*8) + 0 - (3*(i>>1));
 		int h_y = 0;
 		hearts[i] = gameobj_init_full(LAYER_OVERLAY, ATTR0_TALL, ATTR1_SIZE_8x16, PAL_ID_UI, h_tile, h_x, h_y, OBJPROP_FIXED_POS);
+		hearts[i]->base_sprite_id = h_tile;
 		if(i % 2)
 			gameobj_set_flip_h(hearts[i], true);
 	}
@@ -130,7 +133,8 @@ void ui_init()
 	// init gear
 	gear = gameobj_init();
 	g_tile = mem_load_tiles(gearTiles, gearTilesLen);
-	gear->layer_priority = LAYER_OVERLAY;
+	gameobj_set_layer_priority(gear, LAYER_OVERLAY);
+	//gear->layer_priority = LAYER_OVERLAY;
 	gameobj_update_attr_full(gear, ATTR0_SQUARE, ATTR1_SIZE_32x32, PAL_ID_UI, g_tile, 0, 128, OBJPROP_FIXED_POS);
 	AnimationData *gear_anim = animdata_create(g_tile, ANIM_OFFSET_32x32, 3, 0);
 	gameobj_set_anim_data(gear, gear_anim, 0);
@@ -215,13 +219,15 @@ void ui_hide()
 void ui_update_hearts()
 {
 	int player_health = playerhealth_get();
-
+	
 	for(int i = 0; i < PLAYER_HP_MAX; i++)
 	{
 		if(i >= player_health)
-			hearts[i]->spr_tile_id = h_tile + 2;
+			gameobj_set_sprite_id(hearts[i], h_tile+2);
+			//hearts[i]->spr_tile_id = h_tile + 2;
 		else
-			hearts[i]->spr_tile_id = h_tile;
+			gameobj_set_sprite_id(hearts[i], h_tile);
+			//hearts[i]->spr_tile_id = h_tile;
 		gameobj_update_attr(hearts[i]);
 		if(i % 2)
 			gameobj_set_flip_h(hearts[i], true);
@@ -232,13 +238,17 @@ void ui_update_time_gauge()
 {
 	int time_charges = time_charges_check();
 	if(time_charges > 0)
-		time_gauge[0]->spr_tile_id = t_tile + 2*(TG_END_OFFSET_L);
+		gameobj_set_sprite_id(time_gauge[0], t_tile + 2*(TG_END_OFFSET_L));
+		//time_gauge[0]->spr_tile_id = t_tile + 2*(TG_END_OFFSET_L);
 	else
-		time_gauge[0]->spr_tile_id = t_tile + 2*(1+TG_END_OFFSET_L);
+		gameobj_set_sprite_id(time_gauge[0], t_tile + 2*(1+TG_END_OFFSET_L));
+		//time_gauge[0]->spr_tile_id = t_tile + 2*(1+TG_END_OFFSET_L);
 	if(time_charges == 5)
-		time_gauge[TIME_GAUGE_SEGMENTS-1]->spr_tile_id = t_tile + 2*(TG_END_OFFSET_R);
+		gameobj_set_sprite_id(time_gauge[TIME_GAUGE_SEGMENTS-1], t_tile + 2*(TG_END_OFFSET_R));
+		//time_gauge[TIME_GAUGE_SEGMENTS-1]->spr_tile_id = t_tile + 2*(TG_END_OFFSET_R);
 	else
-		time_gauge[TIME_GAUGE_SEGMENTS-1]->spr_tile_id = t_tile + 2*(1+TG_END_OFFSET_R);
+		gameobj_set_sprite_id(time_gauge[TIME_GAUGE_SEGMENTS-1], t_tile + 2*(1+TG_END_OFFSET_R));
+		//time_gauge[TIME_GAUGE_SEGMENTS-1]->spr_tile_id = t_tile + 2*(1+TG_END_OFFSET_R);
 
 	for(int i = 1; i < TIME_GAUGE_SEGMENTS-1; i++)
 	{
@@ -252,9 +262,8 @@ void ui_update_time_gauge()
 			fr += 2*(1+TG_OFFSET_MID);
 		else
 			fr += 2*(TG_OFFSET_MID);
-
-		time_gauge[i]->spr_tile_id = fr;
-
+		gameobj_set_sprite_id(time_gauge[i], fr);
+		//time_gauge[i]->spr_tile_id = fr;
 	}
 }
 
@@ -266,24 +275,30 @@ void ui_update_anim()
 	if(count_rolling != 0)
 	{
 		// update ones digit first
-		int f_offset = action_counter[2]->spr_tile_id - a_tile;
+		int f_offset = gameobj_get_sprite_id(action_counter[2]) - a_tile;
+		//int f_offset = action_counter[2]->spr_tile_id - a_tile;
 		f_offset = ((10 * DIGIT_ANIM_LENGTH) + (f_offset + count_rolling)) % (10 * DIGIT_ANIM_LENGTH);
-		action_counter[2]->spr_tile_id = a_tile + f_offset;
+		gameobj_set_sprite_id(action_counter[2], a_tile+f_offset);
+		//action_counter[2]->spr_tile_id = a_tile + f_offset;
 		
 		//if rolling up to a 0 or down to a 9
 		if(((count_rolling > 0) && (displayed_action_count % 10 == 9)) || ((count_rolling < 0) && (displayed_action_count % 10 == 0)))
 		{
 			// update tens digit as well
-			f_offset = action_counter[1]->spr_tile_id - a_tile;
+			f_offset = gameobj_get_sprite_id(action_counter[1]) - a_tile;
+			//f_offset = action_counter[1]->spr_tile_id - a_tile;
 			f_offset = ((10 * DIGIT_ANIM_LENGTH) + (f_offset + count_rolling)) % (10 * DIGIT_ANIM_LENGTH);
-			action_counter[1]->spr_tile_id = a_tile + f_offset;
+			gameobj_set_sprite_id(action_counter[1], a_tile+f_offset);
+			//action_counter[1]->spr_tile_id = a_tile + f_offset;
 
 			//repeat process for hundreds digit
 			if(((count_rolling > 0) && (displayed_action_count % 100 == 99)) || ((count_rolling < 0) && (displayed_action_count % 100 == 0)))
 			{
-				f_offset = action_counter[0]->spr_tile_id - a_tile;
+				f_offset = gameobj_get_sprite_id(action_counter[0]) - a_tile;
+				//f_offset = action_counter[0]->spr_tile_id - a_tile;
 				f_offset = ((10 * DIGIT_ANIM_LENGTH) + (f_offset + count_rolling)) % (10 * DIGIT_ANIM_LENGTH);
-				action_counter[0]->spr_tile_id = a_tile + f_offset;
+				gameobj_set_sprite_id(action_counter[0], a_tile+f_offset);
+				//action_counter[0]->spr_tile_id = a_tile + f_offset;
 			}
 		}
 
@@ -312,8 +327,9 @@ void reset_action_count()
 	displayed_action_count = 0;
 	for(int i = 0; i < ACTION_COUNTER_DIGITS; i++)
 	{
-		action_counter[i]->spr_tile_id = a_tile;
-		gameobj_update_attr(action_counter[i]);
+		gameobj_set_sprite_id(action_counter[i], a_tile);
+		//action_counter[i]->spr_tile_id = a_tile;
+		//gameobj_update_attr(action_counter[i]);
 	}
 	count_rolling = 0;
 	set_action_count_immediate(0);
@@ -325,13 +341,16 @@ void set_action_count_immediate(int count)
 	true_action_count = count;
 	displayed_action_count = count;
 	// hundreds digit
-	action_counter[0]->spr_tile_id = a_tile + (DIGIT_ANIM_LENGTH * ((count / 100) % 10));
+	gameobj_set_sprite_id(action_counter[0], a_tile + (DIGIT_ANIM_LENGTH * ((count / 100) % 10)));
+	//action_counter[0]->spr_tile_id = a_tile + (DIGIT_ANIM_LENGTH * ((count / 100) % 10));
 	gameobj_update_attr(action_counter[0]);
 	// tens digit
-	action_counter[1]->spr_tile_id = a_tile + (DIGIT_ANIM_LENGTH * ((count / 10) % 10));
+	gameobj_set_sprite_id(action_counter[1], a_tile + (DIGIT_ANIM_LENGTH * ((count / 10) % 10)));
+	//action_counter[1]->spr_tile_id = a_tile + (DIGIT_ANIM_LENGTH * ((count / 10) % 10));
 	gameobj_update_attr(action_counter[1]);
 	// ones digit
-	action_counter[2]->spr_tile_id = a_tile + (DIGIT_ANIM_LENGTH * (count % 10));
+	gameobj_set_sprite_id(action_counter[2], a_tile + (DIGIT_ANIM_LENGTH * (count % 10)));
+	//action_counter[2]->spr_tile_id = a_tile + (DIGIT_ANIM_LENGTH * (count % 10));
 	gameobj_update_attr(action_counter[2]);
 	count_rolling = 0;
 	input_unlock(INPLCK_UI);
