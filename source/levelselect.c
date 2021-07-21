@@ -99,7 +99,7 @@ void load_level_select_ui()
 {
 	int ui_pal = mem_load_palette(levSelCursorPal, PAL_ID_UI);
 	int cursor_tile = mem_load_tiles(levSelCursorTiles, levSelCursorTilesLen);
-	cursor = gameobj_init_full(LAYER_OVERLAY, ATTR0_WIDE, ATTR1_SIZE_64x32, ui_pal, cursor_tile, 32, 32, OBJPROP_FIXED_POS);
+	cursor = gameobj_init_full(LAYER_OVERLAY, ATTR0_WIDE, ATTR1_SIZE_64x32, ui_pal, cursor_tile, 32, 32, true, 0);
 	gameobj_set_sprite_offset(cursor, 16,8);
 	
 	int icon_pal = mem_load_palette(map_iconsPal, 1);
@@ -112,8 +112,8 @@ void load_level_select_ui()
 
 		int x = (col * LEV_SEL_OFFSET_X) + LEV_SEL_PADDING_X;
 		int y = (row * LEV_SEL_OFFSET_Y) + LEV_SEL_PADDING_Y;
-		map_icons[i] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, icon_pal, map_tile + 4*i, x, y, OBJPROP_FIXED_POS);
-		level_plaques[i] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, icon_pal, plaque_tile, x+16, y, OBJPROP_FIXED_POS);
+		map_icons[i] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, icon_pal, map_tile + 4*i, x, y, true, 0);
+		level_plaques[i] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, icon_pal, plaque_tile, x+16, y, true, 0);
 		
 		if(check_level_cleared(i))
 			set_plaque_state(i, PLAQUE_OFF_STAR);

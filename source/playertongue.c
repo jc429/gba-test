@@ -64,7 +64,7 @@ void tongue_init(GameObj *owner)
 {
 	Vector2 pos = owner->tile_pos;
 	base_tile = mem_load_tiles(spr_tongueTiles, spr_tongueTilesLen);
-	tongue_tip = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_PLAYER, base_tile+TSPR_TIP_H, pos.x, pos.y, 0);
+	tongue_tip = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_PLAYER, base_tile+TSPR_TIP_H, pos.x, pos.y, false, 0);
 	vec2_set(&tongue_tip->spr_off, -4, 0);
 	tongue_set_owner(owner);
 	tongue_extension = 0;
@@ -73,7 +73,7 @@ void tongue_init(GameObj *owner)
 
 	for(int i = 0; i < TONGUE_SEGMENTS; i++)
 	{
-		tongue_segments[i] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_PLAYER, base_tile+TSPR_PIECE_H, pos.x, pos.y, 0);
+		tongue_segments[i] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_PLAYER, base_tile+TSPR_PIECE_H, pos.x, pos.y, false, 0);
 		vec2_set(&tongue_segments[i]->spr_off, -4, 0);
 	}
 	tongue_store();

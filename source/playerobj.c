@@ -98,6 +98,7 @@ void playerobj_init()
 		PAL_ID_PLAYER, 
 		p_tile_start, 
 		0, 0,
+		false,
 		OBJPROP_SOLID
 		);
 	register_obj_history(player_obj);

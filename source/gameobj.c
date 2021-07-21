@@ -125,6 +125,8 @@ GameObj *create_gameobj_with_id(u8 obj_id)
 	GameObj *obj = &obj_list[obj_id];
 	obj->game_obj_id = OBJ_USE_MASK | obj_id;
 	obj->attr = &objattr_buffer[obj_id];
+	obj->base_spr_info = 0;
+	obj->obj_properties = 0;
 	//obj->in_use = 1;
 	//obj->obj_id = obj_id;
 	//obj->pal_bank_id = 0;
@@ -162,14 +164,15 @@ GameObj *gameobj_init()
 
 
 // initialize a GameObj in detail
-GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, int x, int y, u16 properties)
+GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, int x, int y, bool fixed_pos, u16 properties)
 {
 	GameObj *obj = gameobj_init();
 
 	//obj->layer_priority = layer_priority;
 	//obj->pal_bank_id = palbank;
 	//obj->spr_tile_id = spr_tile_id;
-	obj->base_sprite_id = spr_id;
+	gameobj_set_base_spr_id(obj, spr_info);
+	gameobj_set_fixed_pos(obj, fixed_pos);
 	
 	
 	//obj->spr_shape = attr0_shape;
@@ -179,7 +182,7 @@ GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, 
 	obj->spr_off.x = 0;
 	obj->spr_off.y = 0;
 	// if a sprite is FIXED_POS, init differently 
-	if(properties & OBJPROP_FIXED_POS)
+	if(fixed_pos)
 	{
 		// FIXED_POS objs only use pixel pos
 		obj->tile_pos.x = -1;
@@ -198,10 +201,10 @@ GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, 
 	}
 
 	// i don't understand why i have to go through set_attr instead of the gameobj_set_sprite functions, but whatever it works
-	obj_set_attr(obj->attr, attr0_shape, attr1_size, ATTR2_BUILD(spr_id, palbank, gameobj_get_layer_priority(obj)));
+	obj_set_attr(obj->attr, attr0_shape, attr1_size, ATTR2_BUILD(spr_info, palbank, gameobj_get_layer_priority(obj)));
 	//gameobj_set_sprite_shape(obj, attr0_shape);
 	//gameobj_set_sprite_size(obj, attr1_size);
-	//obj->attr->attr2 = ATTR2_BUILD(spr_id, palbank, 0);
+	//obj->attr->attr2 = ATTR2_BUILD(spr_info, palbank, 0);
 	gameobj_update_pos(obj);
 
 	return obj;
@@ -228,7 +231,7 @@ GameObj *gameobj_clone(GameObj *dest, GameObj *src)
 	//dest->spr_shape = src->spr_shape;
 	//dest->spr_size = src->spr_size;
 	
-
+	dest->base_spr_info = src->base_spr_info;
 	dest->tile_pos = src->tile_pos;
 	dest->pixel_pos = src->pixel_pos;
 	dest->spr_off = src->spr_off;
@@ -281,17 +284,18 @@ void gameobj_update_attr(GameObj *obj)
 }
 
 // set a GameObj's attributes
-void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, int x, int y, u16 properties)
+void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, int x, int y, bool fixed_pos, u16 properties)
 {
-	obj->base_sprite_id = spr_id;
+	gameobj_set_spr_info(obj, spr_info);
 	//obj->spr_shape = attr0_shape;
 	//obj->spr_size = attr1_size;
 	//obj->pal_bank_id = palbank;
 	//obj->spr_tile_id = spr_tile_id;
 	obj->obj_properties = properties;
+	gameobj_set_fixed_pos(obj, fixed_pos);
 
 	// if a sprite is FIXED_POS, update differently 
-	if(properties & OBJPROP_FIXED_POS)
+	if(fixed_pos)
 	{
 		// FIXED_POS objs only use pixel pos
 		obj->pixel_pos.x = x;
@@ -304,7 +308,7 @@ void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 
 		obj->tile_pos.y = y;
 	}
 
-	u16 attr2 = ATTR2_BUILD(spr_id, palbank, gameobj_get_layer_priority(obj));
+	u16 attr2 = ATTR2_BUILD(spr_info, palbank, gameobj_get_layer_priority(obj));
 	obj_set_attr(obj->attr, attr0_shape, attr1_size, attr2);
 	//u32 tid = obj->spr_tile_id + (obj->anim.anim_data->tile_offset * obj->anim.cur_frame);
 	//obj_set_attr(obj->attr, attr0_shape, attr1_size, (ATTR2_PALBANK(palbank) | tid));
@@ -497,7 +501,7 @@ void gameobj_update_pos(GameObj *obj)
 	Vector2 w_off = get_world_offset();
 	int pos_x = (obj->tile_pos.x * GAME_TILE_SIZE) + obj->pixel_pos.x - obj->spr_off.x - w_off.x;
 	int pos_y = (obj->tile_pos.y * GAME_TILE_SIZE) + obj->pixel_pos.y - obj->spr_off.y - w_off.y;
-	if(obj->obj_properties & OBJPROP_FIXED_POS)
+	if(gameobj_check_fixed_pos(obj))
 		obj_set_pos(obj->attr, obj->pixel_pos.x - obj->spr_off.x, obj->pixel_pos.y - obj->spr_off.y);
 	else
 		obj_set_pos(obj->attr, pos_x, pos_y);
@@ -508,7 +512,7 @@ void gameobj_update_pos(GameObj *obj)
 Vector2 gameobj_get_pixel_pos(GameObj *obj)
 {
 	Vector2 v;
-	if(gameobj_check_properties(obj, OBJPROP_FIXED_POS))
+	if(gameobj_check_fixed_pos(obj))
 	{
 		v.x = obj->pixel_pos.x;
 		v.y = obj->pixel_pos.y;
@@ -565,21 +569,19 @@ void gameobj_update_current_tile(GameObj *obj)
 
 void gameobj_set_facing(GameObj *obj, int facing)
 {
-	facing = (facing & 0x0003) << OBJPROP_FACING_BIT_OFFSET;
-	obj->obj_properties = obj->obj_properties & ~(0x0003 << OBJPROP_FACING_BIT_OFFSET);
-	obj->obj_properties = obj->obj_properties | facing;
+	facing = (facing & 0x0003) << BSI_FACING_BIT_OFFSET;
+	obj->base_spr_info = obj->base_spr_info & ~(0x0003 << BSI_FACING_BIT_OFFSET);
+	obj->base_spr_info = obj->base_spr_info | facing;
 
 	gameobj_update_spr_tile_id(obj);
 }
 
 int gameobj_get_facing(GameObj *obj)
 {
-	int props = obj->obj_properties;
-	props = (props >> OBJPROP_FACING_BIT_OFFSET) & 0x0003;
-	return props;
+	int bsi = obj->base_spr_info;
+	bsi = (bsi >> BSI_FACING_BIT_OFFSET) & 0x0003;
+	return bsi;
 }
-
-
 
 ////////////////
 /// Move Dir ///
@@ -587,18 +589,18 @@ int gameobj_get_facing(GameObj *obj)
 
 void gameobj_set_move_dir(GameObj *obj, int move_dir)
 {
-	move_dir = (move_dir & 0x0003) << OBJPROP_MOVING_BIT_OFFSET;
-	obj->obj_properties = obj->obj_properties & ~(0x0003 << OBJPROP_MOVING_BIT_OFFSET);
-	obj->obj_properties = obj->obj_properties | move_dir;
+	move_dir = (move_dir & 0x0003) << BSI_MOVING_BIT_OFFSET;
+	obj->base_spr_info = obj->base_spr_info & ~(0x0003 << BSI_MOVING_BIT_OFFSET);
+	obj->base_spr_info = obj->base_spr_info | move_dir;
 
 	gameobj_update_spr_tile_id(obj);
 }
 
 int gameobj_get_move_dir(GameObj *obj)
 {
-	int props = obj->obj_properties;
-	props = (props >> OBJPROP_MOVING_BIT_OFFSET) & 0x0003;
-	return props;
+	int bsi = obj->base_spr_info;
+	bsi = (bsi >> BSI_MOVING_BIT_OFFSET) & 0x0003;
+	return bsi;
 }
 
 void gameobj_set_moving(GameObj *obj, bool moving, int move_dir)
@@ -676,7 +678,7 @@ void gameobj_push_changes(GameObj *obj)
 
 	//u16 spr_tile_id = obj->spr_tile_id;
 	//u16 spr_tile_id = gameobj_get_sprite_id(obj);
-	u16 spr_tile_id = obj->base_sprite_id;
+	u16 spr_tile_id = gameobj_get_base_spr_id(obj);
 	
 	//gameobj_set_sprite_id(obj, obj->anim.anim_data->tile_start + (dir * obj->anim.anim_data->facing_offset * obj->anim.anim_data->tile_offset));
 	if(obj->anim.anim_data != NULL)

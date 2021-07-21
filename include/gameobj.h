@@ -12,25 +12,17 @@
 typedef struct struct_GameObj {
 	u8 game_obj_id;						// first bit: in use or not || other 7 bits: actual obj id
 	OBJ_ATTR *attr;
-
 	//u16 attr0;						// AABC DDEE FFFF FFFF || A = SHAPE, B = COLORMODE, C = MOSAIC, D = GFXMODE, E = OBJMODE, F = YPOS
 	//u16 attr1;						// AABC xxxD DDDD DDDD || A = SIZE, B = VFLIP, C = HFLIP, D = XPOS || BCxxx = AFFINDEX
 	//u16 attr2;						// AAAA BBCC CCCC CCCC || A = PALBANK, B = PRIORITY, C = TILEINDEX
-	
-	u16 base_sprite_id;					// needs to be stored separately from attr2 to handle animations etc || SIZE: 10 bits
-	// these are literally attr2
-	//u16 spr_tile_id;					// index of upperleft tile in obj memory (SIZE: 10 bits)
-	//u8 pal_bank_id;						// index of palette in pal memory (SIZE: 4 bits)
-	//u8 layer_priority;					// draw order layer_priority in layer (0 = drawn on top) (SIZE: 2 bits)
+	// base_sprite_id needs to be stored separately from attr2 to handle animations etc (SIZE: 10 bits) || extra bits used as flags for obj directions
+	u16 base_spr_info;					// AABB CDEE EEEE EEEE || A = MOVEDIR, B = FACEDIR, C = FIXED_OBJ, D = HIDDEN, E = base_spr_id
 
-	//u8 spr_shape;						// shape of sprite (SIZE: 2 bits)
-	//u8 spr_size;						// size of sprite (SIZE: 2 bits)
+	u16 obj_properties;					// flags for various gameplay-related properties of a given gameobj
 	
 	Vector2 tile_pos;					// position on map (in tiles) || ignored in FIXED_POS mode
 	Vector2 pixel_pos;					// position relative to tile (in pixels) or position on screen if in FIXED_POS mode
 	Vector2 spr_off;					// offset from top left pixel of sprite to top left corner of its position
-
-	u16 obj_properties;					// flags for various gameplay-related properties of a given gameobj
 
 	Animation anim;						// animation info
 	struct struct_ObjHistory *hist;		// object history - used for time travel
@@ -46,6 +38,40 @@ inline bool get_obj_id(GameObj *obj)
 	return (obj->game_obj_id & OBJ_ID_MASK);
 };
 
+/////////////////////
+/// Base Spr Info ///
+/////////////////////
+
+#define BSI_BASE_SPR_MASK		0x03FF		// lower 10 bits
+#define BSI_FIXED_POS			0x0800		// bit 12 is for whether the object exists in fixed pos mode (UI elements)
+#define BSI_FACING_MASK			0x3000		// bits 13+14 refer to the direction the GameObj is facing (see direction.h for specific values)
+#define BSI_FACING_BIT_OFFSET	12
+#define BSI_MOVING_MASK			0xC000		// bits 15+16 refer to the direction the GameObj is moving (see direction.h for specific values)
+#define BSI_MOVING_BIT_OFFSET	14
+
+inline void gameobj_set_spr_info(GameObj *obj, u16 spr_info)
+{	obj->base_spr_info = spr_info;	};
+
+inline u16 gameobj_get_spr_info(GameObj *obj)
+{	return obj->base_spr_info;	};
+
+inline void gameobj_set_base_spr_id(GameObj *obj, u16 spr_id)
+{	obj->base_spr_info = ((obj->base_spr_info & ~BSI_BASE_SPR_MASK) | (spr_id & BSI_BASE_SPR_MASK));	};
+
+inline u16 gameobj_get_base_spr_id(GameObj *obj)
+{	return obj->base_spr_info & BSI_BASE_SPR_MASK;	};
+
+inline void gameobj_set_fixed_pos(GameObj *obj, bool fixed_pos)
+{	
+	if(fixed_pos)
+		obj->base_spr_info |= BSI_FIXED_POS;
+	else
+		obj->base_spr_info &= ~BSI_FIXED_POS;
+};
+
+inline bool gameobj_check_fixed_pos(GameObj *obj)
+{	return (obj->base_spr_info & BSI_FIXED_POS) > 0;	};
+
 /////////////////////////
 /// Object Properties ///
 /////////////////////////
@@ -58,16 +84,11 @@ inline bool get_obj_id(GameObj *obj)
 
 #define OBJPROP_TIME_IMMUNITY	0x0200		// grants immunity to time-based shenanigans
 #define OBJPROP_HIDDEN			0x0400		// when activated the obj will disappear from view (and collision)
-#define OBJPROP_FIXED_POS		0x0800		// does the object remain in a fixed position on screen? (mostly for UI elements)
-// last 4 bits are treated a little differently
-#define OBJPROP_FACING_MASK		0x3000		// bits 13+14 refer to the direction the GameObj is facing (see direction.h for specific values)
-#define OBJPROP_FACING_BIT_OFFSET	12
-#define OBJPROP_MOVING_MASK		0xC000		// bits 15+16 refer to the direction the GameObj is moving (see direction.h for specific values)
-#define OBJPROP_MOVING_BIT_OFFSET	14
+
 
 inline u16 objprop_ignore_time(GameObj *obj)
 {
-	return (obj->obj_properties & (OBJPROP_FIXED_POS | OBJPROP_HIDDEN | OBJPROP_TIME_IMMUNITY));
+	return (obj->obj_properties & (OBJPROP_HIDDEN | OBJPROP_TIME_IMMUNITY));
 };
 
 
@@ -85,11 +106,7 @@ inline u16 gameobj_get_sprite_id(GameObj *obj)
 inline void gameobj_set_sprite_id(GameObj *obj, u16 spr_id)
 {	obj->attr->attr2 = ((obj->attr->attr2 & ~ATTR2_ID_MASK) | ATTR2_ID(spr_id&ATTR2_ID_MASK));	};
 
-inline void gameobj_set_base_spr_id(GameObj *obj, u16 spr_id)
-{	obj->base_sprite_id = spr_id;	};
 
-inline u16 gameobj_get_base_spr_id(GameObj *obj)
-{	return obj->base_sprite_id;	};
 
 inline u8 gameobj_get_pal_id(GameObj *obj)
 {	return ((obj->attr->attr2)>>ATTR2_PALBANK_SHIFT)&0x0F;	};
@@ -122,7 +139,7 @@ inline void gameobj_set_sprite_size(GameObj *obj, u16 size)
 
 
 GameObj *gameobj_init();
-GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, int x, int y, u16 properties);
+GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, int x, int y, bool fixed_pos, u16 properties);
 GameObj *gameobj_duplicate(GameObj *src);															// duplicate a GameObj into another slot in memory
 GameObj *gameobj_clone(GameObj *dest, GameObj *src);												// copy all attributes of a GameObj into another existing GameObj
 void gameobj_erase(GameObj *obj);																	// wipe all attributes of a GameObj and mark it as unused
@@ -130,7 +147,7 @@ void gameobj_erase_all();																			// wipe all attributes of all GameOb
 
 void gameobj_main_update(GameObj *obj);
 void gameobj_update_attr(GameObj *obj);
-void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, int x, int y, u16 properties);
+void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, int x, int y, bool fixed_pos, u16 properties);
 
 void gameobj_set_property_flags(GameObj *obj, u16 properties);
 void gameobj_add_property_flags(GameObj *obj, u16 properties);
