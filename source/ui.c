@@ -279,7 +279,7 @@ void ui_update_anim()
 		int f_offset = gameobj_get_sprite_id(action_counter[2]) - a_tile;
 		//int f_offset = action_counter[2]->spr_tile_id - a_tile;
 		f_offset = ((10 * DIGIT_ANIM_LENGTH) + (f_offset + count_rolling)) % (10 * DIGIT_ANIM_LENGTH);
-		gameobj_set_sprite_id(action_counter[2], a_tile+f_offset);
+		gameobj_set_base_spr_id(action_counter[2], a_tile+f_offset);
 		//action_counter[2]->spr_tile_id = a_tile + f_offset;
 		
 		//if rolling up to a 0 or down to a 9
@@ -289,7 +289,7 @@ void ui_update_anim()
 			f_offset = gameobj_get_sprite_id(action_counter[1]) - a_tile;
 			//f_offset = action_counter[1]->spr_tile_id - a_tile;
 			f_offset = ((10 * DIGIT_ANIM_LENGTH) + (f_offset + count_rolling)) % (10 * DIGIT_ANIM_LENGTH);
-			gameobj_set_sprite_id(action_counter[1], a_tile+f_offset);
+			gameobj_set_base_spr_id(action_counter[1], a_tile+f_offset);
 			//action_counter[1]->spr_tile_id = a_tile + f_offset;
 
 			//repeat process for hundreds digit
@@ -298,7 +298,7 @@ void ui_update_anim()
 				f_offset = gameobj_get_sprite_id(action_counter[0]) - a_tile;
 				//f_offset = action_counter[0]->spr_tile_id - a_tile;
 				f_offset = ((10 * DIGIT_ANIM_LENGTH) + (f_offset + count_rolling)) % (10 * DIGIT_ANIM_LENGTH);
-				gameobj_set_sprite_id(action_counter[0], a_tile+f_offset);
+				gameobj_set_base_spr_id(action_counter[0], a_tile+f_offset);
 				//action_counter[0]->spr_tile_id = a_tile + f_offset;
 			}
 		}

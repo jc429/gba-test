@@ -491,6 +491,13 @@ bool playerobj_check_floor_tile(int tile_x, int tile_y)
 
 void playerobj_falling_start()
 {
+	if(check_tongue_out())
+	{
+		//tongue_detach();
+		//tongue_retract();
+		tongue_store();
+	}
+	gameobj_add_property_flags(player_obj, OBJPROP_FALLING);
 	input_lock(INPLCK_TIMER);
 	playerobj_play_anim(PAI_FALL);
 	audio_play_sound(SFX_FALL);
@@ -502,8 +509,11 @@ void playerobj_falling_start()
 // called when timer ends
 void playerobj_falling_finish()
 {
+	gameobj_set_tile_pos(player_obj,start_tile.x, start_tile.y);
+	gameobj_update_current_tile(player_obj);
+	gameobj_remove_property_flags(player_obj, OBJPROP_FALLING);
 	timer_clear(&player_timer);
-	history_step_back(1);
+	//history_step_back(1);
 	history_clear_future();
 	input_unlock(INPLCK_TIMER);
 	playerobj_play_anim(PAI_IDLE);

@@ -43,6 +43,7 @@ inline bool get_obj_id(GameObj *obj)
 /////////////////////
 
 #define BSI_BASE_SPR_MASK		0x03FF		// lower 10 bits
+											// bit 11 unused currently
 #define BSI_FIXED_POS			0x0800		// bit 12 is for whether the object exists in fixed pos mode (UI elements)
 #define BSI_FACING_MASK			0x3000		// bits 13+14 refer to the direction the GameObj is facing (see direction.h for specific values)
 #define BSI_FACING_BIT_OFFSET	12
@@ -78,18 +79,18 @@ inline bool gameobj_check_fixed_pos(GameObj *obj)
 #define OBJPROP_SOLID			0x0001		// does the object take up a tile, or can the player/another object step on it?
 #define OBJPROP_PICKUP			0x0002		// does the object get destroyed when the player eats/steps on it?
 #define OBJPROP_MOVABLE			0x0004		// can the player push this object by walking into it?
-#define OBJPROP_MOVING			0x0008		// is the object currently moving
-
-#define OBJPROP_EDIBLE			0x0010		// can the frog consume this?
-
-#define OBJPROP_TIME_IMMUNITY	0x0200		// grants immunity to time-based shenanigans
-#define OBJPROP_HIDDEN			0x0400		// when activated the obj will disappear from view (and collision)
+#define OBJPROP_EDIBLE			0x0008		// can the frog consume this?
 
 
-inline u16 objprop_ignore_time(GameObj *obj)
-{
-	return (obj->obj_properties & (OBJPROP_HIDDEN | OBJPROP_TIME_IMMUNITY));
-};
+
+#define OBJPROP_MOVING			0x1000		// is the object currently moving
+#define OBJPROP_FALLING			0x2000		// is the object currently falling
+
+#define OBJPROP_FLOOROBJ		0x4000		// if set, this obj exists as a floor obj (as opposed to a world obj)
+#define OBJPROP_TIME_IMMUNITY	0x8000		// grants immunity to time-based shenanigans
+
+
+
 
 
 
@@ -156,6 +157,7 @@ u16 gameobj_check_properties(GameObj *obj, u16 properties);
 u16 gameobj_get_properties(GameObj *obj);
 void gameobj_unhide(GameObj *obj);
 void gameobj_hide(GameObj *obj);
+bool obj_hidden(GameObj *obj);
 
 // Graphics Functions
 void gameobj_set_anim_data(GameObj *obj, AnimationData *anim_data, u8 flags);
@@ -187,7 +189,7 @@ void gameobj_set_moving_vec(GameObj *obj, bool moving, Vector2 move_dir);
 bool gameobj_is_moving(GameObj *obj);													
 bool gameobj_all_at_rest();																// returns true when all GameObjs have finished moving
 
-
+bool gameobj_ignores_time(GameObj *obj);
 
 void gameobj_hide_all();
 void gameobj_unhide_all();

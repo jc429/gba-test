@@ -22,6 +22,7 @@ extern GameObj *tongue_get_attached_object();
 //int oi_pal;
 
 void objint_init();
+void crate_update_spr(GameObj *obj);
 
 ////////////////////////
 /// Global Functions ///
@@ -128,7 +129,7 @@ void gameobj_fall(GameObj *obj, int tile_x, int tile_y)
 	gameobj_play_anim(obj);
 	audio_play_sound(SFX_FALL);
 	//gameobj_hide(obj);
-	gameobj_add_property_flags(obj, OBJPROP_TIME_IMMUNITY);
+	gameobj_add_property_flags(obj, OBJPROP_FLOOROBJ);
 }
 
 ////////////////////////////
@@ -152,7 +153,8 @@ GameObj *intobj_create_crate_at_position(int x, int y)
 {
 	int c_tile = mem_load_tiles(obj_crateTiles, obj_crateTilesLen);
 	GameObj *crate = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_TALL, ATTR1_SIZE_16x32, PAL_ID_OBJS, c_tile, 0, 0, false, OBJPROP_SOLID|OBJPROP_MOVABLE);
-	register_obj_history(crate);
+	crate->hist = register_obj_history(crate);
+	crate->hist->update_func = crate_update_spr;
 	gameobj_set_sprite_offset(crate,0,8);
 	place_obj_in_tile(crate, x, y);
 	AnimationData *fall_anim = animdata_create(c_tile, 8, 5, 0);
@@ -162,7 +164,20 @@ GameObj *intobj_create_crate_at_position(int x, int y)
 
 
 
-
+void crate_update_spr(GameObj *obj)
+{
+	anim_stop(&obj->anim);
+	if(gameobj_check_properties(obj, OBJPROP_FLOOROBJ))
+	{
+		obj->anim.cur_frame = obj->anim.anim_data->frame_ct-1;
+		gameobj_set_sprite_id(obj, obj->base_spr_info + (obj->anim.anim_data->tile_offset * (obj->anim.anim_data->frame_ct-1)));
+	}
+	else
+	{
+		obj->anim.cur_frame = 0;
+		gameobj_set_sprite_id(obj, obj->base_spr_info);
+	}
+}
 
 
 /////////////////////

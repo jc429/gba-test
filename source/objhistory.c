@@ -93,19 +93,20 @@ ObjHistory *get_obj_history(int index)
 }
 
 // update the history of an obj at the end of a turn
-void update_obj_history(ObjHistory *history, int facing, int tpos_x, int tpos_y)
+void update_obj_history(ObjHistory *history, int facing, int tile_id, u16 props)
 {
 	if(facing < 0)															//provide a negative facing value to repeat last turn's value
 		facing = history->facing_history;
 	facing &= 3;															//zero out any irrelevant bits
 	history->facing_history = (history->facing_history<<2) | facing;		//shift the history up 2 bits, then add in the new facing value
 
-	int tile_id = get_tile_id(tpos_x,tpos_y);
 	for(int i = HISTORY_TURN_MAX-1; i > 0; i--)
 	{
 		history->tile_history[i] = history->tile_history[i-1];
+		history->prop_history[i] = history->prop_history[i-1];
 	}
 	history->tile_history[0] = tile_id;
+	history->prop_history[0] = props;
 }
 
 // clear and reset the history of an obj
@@ -118,7 +119,11 @@ void clear_obj_history(ObjHistory *history)
 	hist_obj_unlink(history, history->game_obj);
 	history->facing_history = 0;
 	for(int i = 0; i < HISTORY_TURN_MAX; i++)
+	{
 		history->tile_history[i] = -1;
+		history->prop_history[i] = 0;
+	}
+	history->update_func = NULL;
 }
 
 // clear and reset all obj histories
@@ -160,6 +165,14 @@ int history_get_facing_at_time(ObjHistory *history, int turns_ago)
 	return facing;
 }
 
+u16 history_get_properties_at_time(ObjHistory *history, int turns_ago)
+{
+	// if invalid turn supplied 
+	if(turns_ago < 0 || turns_ago >= HISTORY_TURN_MAX)
+		return 0;
+
+	return history->prop_history[turns_ago];
+}
 
 
 ////////////////////////
@@ -235,18 +248,30 @@ void set_obj_to_turn(ObjHistory *history, int new_turns_ago)
 		return;
 	if(history->game_obj == NULL)
 		return;
-	if(objprop_ignore_time(history->game_obj))
+	if(gameobj_ignores_time(history->game_obj))
 		return;
+
+	// update facing
+	int facing = history_get_facing_at_time(history, new_turns_ago);
+	gameobj_set_facing(history->game_obj, facing);
+	// update property flags
+	int props = history_get_properties_at_time(history, new_turns_ago);
+	gameobj_set_property_flags(history->game_obj, props);
 
 	// clear old tiles
 	int old_tile_id = history_get_tile_id_at_time(history, current_turns_ago);
-	remove_tile_contents_by_id(history->game_obj, old_tile_id);
-	remove_floor_contents_by_id(history->game_obj, old_tile_id);
+	int old_props = history_get_properties_at_time(history, current_turns_ago);
+	if(old_props & OBJPROP_FLOOROBJ)
+		remove_floor_contents_by_id(history->game_obj, old_tile_id);
+	else
+		remove_tile_contents_by_id(history->game_obj, old_tile_id);
 
 	// enter new tile
 	int new_tile_id = history_get_tile_id_at_time(history, new_turns_ago);
-	//gameobj_set_tile_pos_by_id(history->game_obj, tile_id);
-	place_obj_in_tile_by_id(history->game_obj, new_tile_id);
+	if(props & OBJPROP_FLOOROBJ)
+		place_obj_in_tile_floor_by_id(history->game_obj, new_tile_id);
+	else
+		place_obj_in_tile_by_id(history->game_obj, new_tile_id);
 
 	// create a teleport effect if the object changed positions
 	if(old_tile_id != new_tile_id && old_tile_id >= 0 && new_tile_id >= 0)
@@ -254,13 +279,13 @@ void set_obj_to_turn(ObjHistory *history, int new_turns_ago)
 		create_effect_at_tile(ET_TELEPORT, old_tile_id);
 	}
 
-	
-	int facing = history_get_facing_at_time(history, new_turns_ago);
-	gameobj_set_facing(history->game_obj, facing);
-
 	if((history->game_obj->anim.flags & ANIM_FLAG_LOCK) == 0)
 		history->game_obj->anim.cur_frame = 0;
 
+	if(history->update_func != NULL)
+	{
+		history->update_func(history->game_obj);
+	}
 }
 
 // clear the future and progress with a new timeline
@@ -287,7 +312,7 @@ void clear_obj_future(ObjHistory *history)
 	if(history->game_obj == NULL)
 		return;
 	
-	if(objprop_ignore_time(history->game_obj))
+	if(gameobj_ignores_time(history->game_obj))
 		return;
 
 	// push histories forward again
@@ -319,7 +344,8 @@ void history_update_all()
 			continue;
 		int tile_x = hist->game_obj->tile_pos.x;
 		int tile_y = hist->game_obj->tile_pos.y;
-		update_obj_history(hist, gameobj_get_facing(hist->game_obj), tile_x, tile_y);
+		int tile_id = get_tile_id(tile_x, tile_y);
+		update_obj_history(hist, gameobj_get_facing(hist->game_obj), tile_id, hist->game_obj->obj_properties);
 	}
 }
 

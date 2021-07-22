@@ -14,17 +14,20 @@ typedef struct struct_ObjHistory{
 	struct struct_GameObj *game_obj;
 	uint32_t facing_history;															// facing data stored as 16 pairs of bits to save space (see directions.h for values)
 	int tile_history[HISTORY_TURN_MAX];													// position data stored as a series of ints (referring to tileID)
+	u16 prop_history[HISTORY_TURN_MAX];													// property data
+	void (*update_func)(struct struct_GameObj *obj);
 } ObjHistory;
 
 void obj_history_init();																// initialize ObjHistory list
 ObjHistory *register_obj_history(GameObj *obj);											// returns a free ObjHistory from the list and assigns a GameObj to it
 ObjHistory *get_obj_history(int index);													// returns the ObjHistory at a given index
-void update_obj_history(ObjHistory *history, int facing, int tpos_x, int tpos_y);		// pushes changes to the action queue
+void update_obj_history(ObjHistory *history, int facing, int tile_id, u16 props);		// pushes changes to the action queue
 void clear_obj_history(ObjHistory *history);											// clear and reset the history of an obj
 void clear_all_obj_history();															// clear and reset all obj histories
 
 int history_get_tile_id_at_time(ObjHistory *history, int turns_ago);					// returns the tile id of an objs position X turns ago
 int history_get_facing_at_time(ObjHistory *history, int turns_ago);						// returns the direction an obj was facing X turns ago
+u16 history_get_properties_at_time(ObjHistory *history, int turns_ago);
 
 void history_step_back(int turn_count);													// rewind the clock X number of turns
 void history_step_forward(int turn_count);												// jump forward X number of turns

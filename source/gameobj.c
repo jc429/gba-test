@@ -48,12 +48,10 @@ OBJ_ATTR objattr_buffer[OBJ_COUNT];
 // necessary prep for the GameObj system
 void gameobj_init_all()
 {
-	
 	//hides all sprites
 	oam_init(objattr_buffer, ATTR_COUNT);
 
 	obj_history_init();
-
 }
 
 void gameobj_erase_all()
@@ -347,16 +345,22 @@ u16 gameobj_get_properties(GameObj *obj)
 // unhide a GameObj
 void gameobj_unhide(GameObj *obj)
 {
-	obj->obj_properties &= ~OBJPROP_HIDDEN;
+	//obj->obj_properties &= ~OBJPROP_HIDDEN;
 	obj_unhide(obj->attr,DCNT_MODE0);
 }
 
 // hide a GameObj
 void gameobj_hide(GameObj *obj)
 {
-	obj->obj_properties |= OBJPROP_HIDDEN;
+	//obj->obj_properties |= OBJPROP_HIDDEN;
 	obj_hide(obj->attr);
 }
+
+bool obj_hidden(GameObj *obj)
+{
+	return ((obj->attr->attr0 & 0x0300) == ATTR0_HIDE);
+}
+
 
 
 ////////////////
@@ -664,7 +668,7 @@ bool gameobj_all_at_rest()
 {
 	for(int i = 0; i < OBJ_COUNT; i++)
 	{
-		if(gameobj_is_moving(&obj_list[i]))
+		if(gameobj_check_properties(&obj_list[i], OBJPROP_MOVING|OBJPROP_FALLING))
 			return false;
 	}
 	return true;
@@ -711,7 +715,10 @@ void gameobj_push_changes(GameObj *obj)
 }
 
 
-
+bool gameobj_ignores_time(GameObj *obj)
+{
+	return ((obj->obj_properties & OBJPROP_TIME_IMMUNITY) | (obj->base_spr_info & BSI_FIXED_POS) | obj_hidden(obj));
+}
 
 // hide all GameObjs
 void gameobj_hide_all()
