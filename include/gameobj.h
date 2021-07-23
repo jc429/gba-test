@@ -87,7 +87,7 @@ inline bool gameobj_check_fixed_pos(GameObj *obj)
 #define OBJPROP_MOVABLE			0x0004		// can the player push this object by walking into it?
 #define OBJPROP_EDIBLE			0x0008		// can the frog consume this?
 
-
+#define OBJPROP_CANGRAB			0x0010		// can the player latch onto the object with its tongue?
 
 #define OBJPROP_FLOOROBJ		0x0800		// if set, this obj exists as a floor obj (as opposed to a world obj)
 

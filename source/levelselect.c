@@ -115,9 +115,9 @@ void load_level_select_ui()
 
 		obj_pos.x = (col * LEV_SEL_OFFSET_X) + LEV_SEL_PADDING_X;
 		obj_pos.y = (row * LEV_SEL_OFFSET_Y) + LEV_SEL_PADDING_Y;
-		map_icons[i] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, icon_pal, map_tile + 4*i, obj_pos, true, 0);
+		map_icons[i] = gameobj_init_free(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, icon_pal, map_tile + 4*i, obj_pos, true, 0);
 		obj_pos.x += 16;
-		level_plaques[i] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, icon_pal, plaque_tile, obj_pos, true, 0);
+		level_plaques[i] = gameobj_init_free(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, icon_pal, plaque_tile, obj_pos, true, 0);
 		
 		if(check_level_cleared(i))
 			set_plaque_state(i, PLAQUE_OFF_STAR);

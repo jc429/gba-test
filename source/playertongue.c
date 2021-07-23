@@ -8,7 +8,9 @@
 #include "game.h"
 #include "palettes.h"
 #include "audio.h"
+#include "objinteract.h"
 #include "sprites/player/spr_tongue.h"
+
 
 #define TSPR_PIECE_H	0
 #define TSPR_PIECE_V	1
@@ -52,7 +54,7 @@ TongueState tongue_state;
 
 GameObj *tongue_tip;
 int base_tile;				// tile_id of the tongue sprite sheet
-#define TONGUE_SEGMENTS 7
+#define TONGUE_SEGMENTS 8
 GameObj *tongue_segments[TONGUE_SEGMENTS];	// the "neck" of the tongue
 
 GameObj *tongue_owner;		// playerobj, essentially
@@ -64,7 +66,7 @@ void tongue_init(GameObj *owner)
 {
 	Vector2 pos = owner->tile_pos;
 	base_tile = mem_load_tiles(spr_tongueTiles, spr_tongueTilesLen);
-	tongue_tip = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_PLAYER, base_tile+TSPR_TIP_H, pos, false, 0);
+	tongue_tip = gameobj_init_free(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_PLAYER, base_tile+TSPR_TIP_H, pos, false, 0);
 	vec2_set(&tongue_tip->spr_off, -4, 0);
 	tongue_set_owner(owner);
 	tongue_extension = 0;
@@ -73,7 +75,7 @@ void tongue_init(GameObj *owner)
 
 	for(int i = 0; i < TONGUE_SEGMENTS; i++)
 	{
-		tongue_segments[i] = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_PLAYER, base_tile+TSPR_PIECE_H, pos, false, 0);
+		tongue_segments[i] = gameobj_init_free(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_PLAYER, base_tile+TSPR_PIECE_H, pos, false, 0);
 		vec2_set(&tongue_segments[i]->spr_off, -4, 0);
 	}
 	tongue_store();
@@ -142,7 +144,7 @@ void tongue_update_length()
 		case TS_PULLING_OBJ:
 			if(tongue_extension > tongue_len_bonus)
 			{
-				if(tongue_extension - EXT_SPD <= tongue_len_bonus)
+				if(gameobj_check_properties(attached_obj,OBJPROP_SOLID) && (tongue_extension - EXT_SPD <= tongue_len_bonus))
 				{
 					gameobj_change_pixel_pos(attached_obj, owner_facing.x * (tongue_len_bonus - tongue_extension), owner_facing.y * (tongue_len_bonus - tongue_extension));
 					gameobj_update_current_tile(attached_obj);	// might need to check tile safety here
@@ -151,9 +153,13 @@ void tongue_update_length()
 				else
 					gameobj_change_pixel_pos(attached_obj, owner_facing.x * -EXT_SPD, owner_facing.y * -EXT_SPD);
 			}
+			else if(gameobj_check_properties(attached_obj,OBJPROP_SOLID) == 0)
+				gameobj_change_pixel_pos(attached_obj, owner_facing.x * -EXT_SPD, owner_facing.y * -EXT_SPD);
 			tongue_extension -= EXT_SPD;
 			if(tongue_extension <= 0)
 			{
+				if(gameobj_check_properties(attached_obj,OBJPROP_SOLID) == 0)
+					objint_collect(attached_obj, tongue_owner);
 				tongue_extension = 0;
 				tongue_store();
 			}
@@ -414,7 +420,7 @@ void tongue_check()
 	if(!check_tile_free(v.x, v.y))
 	{
 		GameObj *obj = get_tile_contents(v.x,v.y);
-		if(obj != NULL)
+		if(obj != NULL && gameobj_check_properties(obj, OBJPROP_CANGRAB))
 		{
 			tongue_attach_obj(obj);
 			input_unlock(INPLCK_TONGUE);
