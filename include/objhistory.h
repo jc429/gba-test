@@ -48,5 +48,6 @@ void turn_count_decrement();
 void time_charges_reset();
 int time_charges_check();
 bool time_charge_use();
+void time_charge_increase(int amt);
 
 #endif //OBJHISTORY_H

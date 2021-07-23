@@ -5,6 +5,7 @@
 #include "audio.h"
 #include "palettes.h"
 #include "regmem.h"
+#include "layers.h"
 
 
 #include "sprites/objects/coin.h"
@@ -58,6 +59,7 @@ void objint_collect(GameObj *target, GameObj *instigator)
 		return;
 	// TODO: Apply Collect Effect
 	audio_play_sound(SFX_COLLECT_COIN);
+	time_charge_increase(1);
 	create_effect_at_position(ET_SMOKE, target->tile_pos.x, target->tile_pos.y, 0);
 	remove_tile_contents(target, target->tile_pos.x, target->tile_pos.y);
 	gameobj_erase(target);
@@ -130,6 +132,7 @@ void gameobj_fall(GameObj *obj, int tile_x, int tile_y)
 	audio_play_sound(SFX_FALL);
 	//gameobj_hide(obj);
 	gameobj_add_property_flags(obj, OBJPROP_FLOOROBJ);
+	gameobj_set_layer_priority(obj, LAYER_FLOOROBJ);
 }
 
 ////////////////////////////
@@ -138,8 +141,10 @@ void gameobj_fall(GameObj *obj, int tile_x, int tile_y)
 
 GameObj *intobj_create_coin_at_position(int x, int y)
 {
+	Vector2 c_pos;
+	vec2_set(&c_pos, x, y);
 	int c_tile = mem_load_tiles(spr_coinTiles, spr_coinTilesLen);
-	GameObj *coin = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, c_tile, 0, 0, false, OBJPROP_PICKUP);
+	GameObj *coin = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, c_tile, c_pos, false, OBJPROP_PICKUP);
 	register_obj_history(coin);
 	gameobj_set_sprite_offset(coin,0,2);
 	place_obj_in_tile(coin, x, y);
@@ -151,8 +156,10 @@ GameObj *intobj_create_coin_at_position(int x, int y)
 
 GameObj *intobj_create_crate_at_position(int x, int y)
 {
+	Vector2 c_pos;
+	vec2_set(&c_pos, x, y);
 	int c_tile = mem_load_tiles(obj_crateTiles, obj_crateTilesLen);
-	GameObj *crate = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_TALL, ATTR1_SIZE_16x32, PAL_ID_OBJS, c_tile, 0, 0, false, OBJPROP_SOLID|OBJPROP_MOVABLE);
+	GameObj *crate = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_TALL, ATTR1_SIZE_16x32, PAL_ID_OBJS, c_tile, c_pos, false, OBJPROP_SOLID|OBJPROP_MOVABLE);
 	crate->hist = register_obj_history(crate);
 	crate->hist->update_func = crate_update_spr;
 	gameobj_set_sprite_offset(crate,0,8);
@@ -169,11 +176,13 @@ void crate_update_spr(GameObj *obj)
 	anim_stop(&obj->anim);
 	if(gameobj_check_properties(obj, OBJPROP_FLOOROBJ))
 	{
+		gameobj_set_layer_priority(obj, LAYER_FLOOROBJ);
 		obj->anim.cur_frame = obj->anim.anim_data->frame_ct-1;
 		gameobj_set_sprite_id(obj, obj->base_spr_info + (obj->anim.anim_data->tile_offset * (obj->anim.anim_data->frame_ct-1)));
 	}
 	else
 	{
+		gameobj_set_layer_priority(obj, LAYER_GAMEOBJ);
 		obj->anim.cur_frame = 0;
 		gameobj_set_sprite_id(obj, obj->base_spr_info);
 	}
@@ -188,7 +197,10 @@ void crate_update_spr(GameObj *obj)
 GameObj *floorobj_create_victory_tile_at_position(int x, int y)
 {
 	int vt = mem_load_tiles(victory_tileTiles, victory_tileTilesLen);
-	GameObj *vic_tile = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, vt, 0, 0, false, OBJPROP_TIME_IMMUNITY);
+	Vector2 vt_pos;
+	vt_pos.x = x;
+	vt_pos.y = y;
+	GameObj *vic_tile = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, vt, vt_pos, false, OBJPROP_TIME_IMMUNITY);
 	place_obj_in_tile_floor(vic_tile, x, y);
 	AnimationData *vt_anim = animdata_create(vt, 4, 4, 0);
 	gameobj_set_anim_data(vic_tile, vt_anim, ANIM_FLAG_LOOPING);
@@ -199,9 +211,11 @@ GameObj *floorobj_create_victory_tile_at_position(int x, int y)
 
 GameObj *floorobj_create_spikes_at_position(int x, int y)
 {
-	
 	int s_tile = mem_load_tiles(spikesTiles, spikesTilesLen);
-	GameObj *spikes = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, s_tile, 0, 0, false, 0);
+	Vector2 s_pos;
+	s_pos.x = x;
+	s_pos.y = y;
+	GameObj *spikes = gameobj_init_full(LAYER_GAMEOBJ, ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, s_tile, s_pos, false, 0);
 	place_obj_in_tile_floor(spikes, x, y);
 	
 	return spikes;

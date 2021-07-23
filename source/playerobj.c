@@ -90,14 +90,14 @@ void playerobj_init()
 {
 
 	//p_palette = mem_load_palette(spr_playerPal, PAL_ID_PLAYER);
+	Vector2 p_pos;
 	p_tile_start = mem_load_tiles(spr_playerTiles, spr_playerTilesLen);
-	player_obj = gameobj_init_full(
-		LAYER_GAMEOBJ, 
+	player_obj = gameobj_init_dynamic(
 		ATTR0_SQUARE, 
 		ATTR1_SIZE_16x16, 
 		PAL_ID_PLAYER, 
 		p_tile_start, 
-		0, 0,
+		p_pos,
 		false,
 		OBJPROP_SOLID
 		);
@@ -275,8 +275,9 @@ void playerobj_move(int move_x, int move_y)
 	//	return;
 	//ushort tile_props = get_tile_properties(end_tile.x, end_tile.y);
 	
-
 	// check that dest tile is empty
+	if(get_tile_properties(end_tile.x, end_tile.y) & TILEPROP_SOLID)
+		return;
 	GameObj *contents = get_tile_contents(end_tile.x, end_tile.y);
 	if(contents != NULL)
 	{
@@ -305,8 +306,7 @@ void playerobj_move(int move_x, int move_y)
 			return;
 		}
 	}
-	if(!check_tile_free(end_tile.x, end_tile.y))
-		return;
+
 
 	// reset offsets (should already be 0 but just in case)
 	offset.x = 0;

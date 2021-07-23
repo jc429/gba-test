@@ -41,7 +41,8 @@ GameObj *pause_cursor;
 void pausemenu_init()
 {
 	int c_tile = mem_load_tiles(pauseCursorTiles, pauseCursorTilesLen);
-	pause_cursor = gameobj_init_full(LAYER_OVERLAY, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_UI, c_tile, 0, 0, true, 0);
+	Vector2 c_pos;
+	pause_cursor = gameobj_init_full(LAYER_OVERLAY, ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_UI, c_tile, c_pos, true, 0);
 	gameobj_set_sprite_offset(pause_cursor,8,-4);
 	AnimationData *pc_anim = animdata_create(c_tile, 1, 4, 0);
 	gameobj_set_anim_data(pause_cursor, pc_anim, ANIM_FLAG_LOOPING);

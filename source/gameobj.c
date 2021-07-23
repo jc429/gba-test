@@ -10,8 +10,15 @@
 #include "map.h"
 
 
-#define ATTR_COUNT 128			// max number of attrs 
+#define ATTR_COUNT 128			// max number of attrs
 #define OBJ_COUNT 128			// max number of objs
+
+#define OBJLIST_UI_OFFSET		0		// location of ui objs
+#define OBJLIST_UI_COUNT		32		// number of ui objs
+#define OBJLIST_DYNAMIC_OFFSET	32		// location of dynamic objs
+#define OBJLIST_DYNAMIC_COUNT	32		// number of dynamic objs
+#define OBJLIST_FREE_OFFSET		64		// location of free objs
+#define OBJLIST_FREE_COUNT		64		// number of free objs
 
 #define SPR_OFF_Y_DEFAULT 2		// default sprite offset (to make sprites sit on bg)
 
@@ -125,16 +132,9 @@ GameObj *create_gameobj_with_id(u8 obj_id)
 	obj->attr = &objattr_buffer[obj_id];
 	obj->base_spr_info = 0;
 	obj->obj_properties = 0;
-	//obj->in_use = 1;
-	//obj->obj_id = obj_id;
-	//obj->pal_bank_id = 0;
-	//obj->spr_tile_id = 0;
-	//obj->layer_priority = LAYER_GAMEOBJ;
 	gameobj_set_layer_priority(obj, LAYER_GAMEOBJ);
 	gameobj_set_sprite_shape(obj, ATTR0_SQUARE);
 	gameobj_set_sprite_size(obj, ATTR1_SIZE_16x16);
-	//obj->spr_shape = ATTR0_SQUARE;
-	//obj->spr_size = ATTR1_SIZE_16x16;	// assume 16x6 for default bc I really doubt anyone is regularly making 16x8 objects 
 
 	obj->tile_pos.x = 0;
 	obj->tile_pos.y = 0;
@@ -160,42 +160,76 @@ GameObj *gameobj_init()
 	return NULL;
 }
 
+GameObj *gameobj_init_of_type(ObjType type)
+{
+	switch(type){
+		case OT_UI:
+			for(int i = 0; i < OBJLIST_UI_COUNT; i++)
+			{
+				if(!get_obj_used(&obj_list[i + OBJLIST_UI_OFFSET]))
+				{
+					return create_gameobj_with_id(i+OBJLIST_UI_OFFSET);
+				}
+			}
+			break;
+		case OT_DYNAMIC:
+			for(int i = 0; i < OBJLIST_DYNAMIC_COUNT; i++)
+			{
+				if(!get_obj_used(&obj_list[i + OBJLIST_DYNAMIC_OFFSET]))
+				{
+					return create_gameobj_with_id(i+OBJLIST_DYNAMIC_OFFSET);
+				}
+			}
+			break;
+		case OT_FREE:
+			for(int i = 0; i < OBJLIST_FREE_COUNT; i++)
+			{
+				if(!get_obj_used(&obj_list[i + OBJLIST_FREE_OFFSET]))
+				{
+					return create_gameobj_with_id(i+OBJLIST_FREE_OFFSET);
+				}
+			}
+			break;
+		default:
+			break;
+	}
+	return NULL;
 
-// initialize a GameObj in detail
-GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, int x, int y, bool fixed_pos, u16 properties)
+	for(int i = 0; i < OBJ_COUNT; i++)
+	{
+		if(!get_obj_used(&obj_list[i]))
+		{
+			return create_gameobj_with_id(i);
+		}
+	}
+	return NULL;
+}
+
+
+// initialize a GameObj in detail (deprecate?)
+GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, Vector2 pos, bool fixed_pos, u16 properties)
 {
 	GameObj *obj = gameobj_init();
 
-	//obj->layer_priority = layer_priority;
-	//obj->pal_bank_id = palbank;
-	//obj->spr_tile_id = spr_tile_id;
 	gameobj_set_base_spr_id(obj, spr_info);
 	gameobj_set_fixed_pos(obj, fixed_pos);
-	
-	
-	//obj->spr_shape = attr0_shape;
-	//obj->spr_size = attr1_size;
+
 	obj->obj_properties = properties;
 	obj->hist = NULL;
-	obj->spr_off.x = 0;
-	obj->spr_off.y = 0;
+	vec2_clear(&obj->spr_off);
 	// if a sprite is FIXED_POS, init differently 
 	if(fixed_pos)
 	{
 		// FIXED_POS objs only use pixel pos
-		obj->tile_pos.x = -1;
-		obj->tile_pos.y = -1;
-		obj->pixel_pos.x = x;
-		obj->pixel_pos.y = y;
+		vec2_copy(&obj->pixel_pos, &pos);
+		vec2_clear(&obj->tile_pos);
 	}
 	else
 	{
 		gameobj_set_sprite_offset(obj, 0, SPR_OFF_Y_DEFAULT);
 		// set position as tile pos for non-FIXED_POS objs
-		obj->tile_pos.x = x;
-		obj->tile_pos.y = y;
-		obj->pixel_pos.x = 0;
-		obj->pixel_pos.y = 0;
+		vec2_copy(&obj->tile_pos, &pos);
+		vec2_clear(&obj->pixel_pos);
 	}
 
 	// i don't understand why i have to go through set_attr instead of the gameobj_set_sprite functions, but whatever it works
@@ -207,6 +241,99 @@ GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, 
 
 	return obj;
 }
+
+// ui objs have fixed positions and do not interact with the game world
+GameObj *gameobj_init_ui(u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, Vector2 pos, u16 properties)
+{
+	GameObj *obj = gameobj_init_of_type(OT_UI);
+
+	gameobj_set_base_spr_id(obj, spr_info);
+	gameobj_set_fixed_pos(obj, true);
+
+	obj->obj_properties = properties;
+	obj->hist = NULL;
+	vec2_clear(&obj->spr_off);
+	// FIXED_POS objs only use pixel pos
+	vec2_clear(&obj->tile_pos);
+	vec2_copy(&obj->pixel_pos, &pos);
+
+	obj_set_attr(obj->attr, attr0_shape, attr1_size, ATTR2_BUILD(spr_info, palbank, LAYER_UI));
+
+	gameobj_update_pos(obj);
+
+	return obj;
+}
+
+// dynamic objs have histories and move around in the game world
+GameObj *gameobj_init_dynamic(u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, Vector2 pos, bool fixed_pos, u16 properties)
+{
+	GameObj *obj = gameobj_init_of_type(OT_DYNAMIC);
+
+	gameobj_set_base_spr_id(obj, spr_info);
+	gameobj_set_fixed_pos(obj, fixed_pos);
+
+	obj->obj_properties = properties;
+	obj->hist = NULL;
+	vec2_clear(&obj->spr_off);
+	// if a sprite is FIXED_POS, init differently 
+	if(fixed_pos)
+	{
+		// FIXED_POS objs only use pixel pos
+		vec2_copy(&obj->pixel_pos, &pos);
+		vec2_clear(&obj->tile_pos);
+	}
+	else
+	{
+		gameobj_set_sprite_offset(obj, 0, SPR_OFF_Y_DEFAULT);
+		// set position as tile pos for non-FIXED_POS objs
+		vec2_copy(&obj->tile_pos, &pos);
+		vec2_clear(&obj->pixel_pos);
+	}
+	// i don't understand why i have to go through set_attr instead of the gameobj_set_sprite functions, but whatever it works
+	obj_set_attr(obj->attr, attr0_shape, attr1_size, ATTR2_BUILD(spr_info, palbank, LAYER_GAMEOBJ));
+	//gameobj_set_sprite_shape(obj, attr0_shape);
+	//gameobj_set_sprite_size(obj, attr1_size);
+	//obj->attr->attr2 = ATTR2_BUILD(spr_info, palbank, 0);
+	gameobj_update_pos(obj);
+
+	return obj;
+
+}
+
+// free objs can be whatever they want, but lose access to obj histories and other goodies
+GameObj *gameobj_init_free(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, Vector2 pos, bool fixed_pos, u16 properties)
+{
+	GameObj *obj = gameobj_init_of_type(OT_FREE);
+
+	gameobj_set_base_spr_id(obj, spr_info);
+	gameobj_set_fixed_pos(obj, fixed_pos);
+
+	obj->obj_properties = properties;
+	obj->hist = NULL;
+	vec2_clear(&obj->spr_off);
+	// if a sprite is FIXED_POS, init differently 
+	if(fixed_pos)
+	{
+		// FIXED_POS objs only use pixel pos
+		vec2_copy(&obj->pixel_pos, &pos);
+		vec2_clear(&obj->tile_pos);
+	}
+	else
+	{
+		gameobj_set_sprite_offset(obj, 0, SPR_OFF_Y_DEFAULT);
+		// set position as tile pos for non-FIXED_POS objs
+		vec2_copy(&obj->tile_pos, &pos);
+		vec2_clear(&obj->pixel_pos);
+	}
+	// i don't understand why i have to go through set_attr instead of the gameobj_set_sprite functions, but whatever it works
+	obj_set_attr(obj->attr, attr0_shape, attr1_size, ATTR2_BUILD(spr_info, palbank, gameobj_get_layer_priority(obj)));
+	gameobj_update_pos(obj);
+	return obj;
+}
+
+
+
+///////////////////////////////////////
 
 // duplicate a GameObj into another slot in memory
 GameObj *gameobj_duplicate(GameObj *src)
@@ -282,7 +409,7 @@ void gameobj_update_attr(GameObj *obj)
 }
 
 // set a GameObj's attributes
-void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, int x, int y, bool fixed_pos, u16 properties)
+void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, Vector2 pos, bool fixed_pos, u16 properties)
 {
 	gameobj_set_spr_info(obj, spr_info);
 	//obj->spr_shape = attr0_shape;
@@ -296,14 +423,14 @@ void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 
 	if(fixed_pos)
 	{
 		// FIXED_POS objs only use pixel pos
-		obj->pixel_pos.x = x;
-		obj->pixel_pos.y = y;
+		obj->pixel_pos.x = pos.x;
+		obj->pixel_pos.y = pos.y;
 	}
 	else
 	{
 		// set position as tile pos for non-FIXED_POS objs
-		obj->tile_pos.x = x;
-		obj->tile_pos.y = y;
+		obj->tile_pos.x = pos.x;
+		obj->tile_pos.y = pos.y;
 	}
 
 	u16 attr2 = ATTR2_BUILD(spr_info, palbank, gameobj_get_layer_priority(obj));

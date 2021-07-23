@@ -127,6 +127,9 @@ void load_map_objs(int level_id)
 			intobj_create_crate_at_position(6,10);
 			intobj_create_crate_at_position(9,10);
 			intobj_create_crate_at_position(4,6);
+			intobj_create_coin_at_position(5,6);
+			intobj_create_coin_at_position(3,8);
+			intobj_create_coin_at_position(7,9);
 			break;
 	}
 

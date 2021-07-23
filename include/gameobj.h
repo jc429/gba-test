@@ -9,6 +9,12 @@
 #define OBJ_USE_MASK		0x80
 #define OBJ_ID_MASK			0x7F
 
+typedef enum ObjType_T{
+	OT_UI,
+	OT_DYNAMIC,
+	OT_FREE
+} ObjType;
+
 typedef struct struct_GameObj {
 	u8 game_obj_id;						// first bit: in use or not || other 7 bits: actual obj id
 	OBJ_ATTR *attr;
@@ -25,7 +31,7 @@ typedef struct struct_GameObj {
 	Vector2 spr_off;					// offset from top left pixel of sprite to top left corner of its position
 
 	Animation anim;						// animation info
-	struct struct_ObjHistory *hist;		// object history - used for time travel
+	struct struct_ObjHistory *hist;		// object history - used by dynamic objs for time travel
 } GameObj;
 
 inline bool get_obj_used(GameObj *obj)
@@ -83,15 +89,12 @@ inline bool gameobj_check_fixed_pos(GameObj *obj)
 
 
 
+#define OBJPROP_FLOOROBJ		0x0800		// if set, this obj exists as a floor obj (as opposed to a world obj)
+
 #define OBJPROP_MOVING			0x1000		// is the object currently moving
 #define OBJPROP_FALLING			0x2000		// is the object currently falling
-
-#define OBJPROP_FLOOROBJ		0x4000		// if set, this obj exists as a floor obj (as opposed to a world obj)
+#define OBJPROP_DYNAMIC			0x8000		// if set, this object is a dynamic world obj and gets assigned an ObjHistory (limit 32)
 #define OBJPROP_TIME_IMMUNITY	0x8000		// grants immunity to time-based shenanigans
-
-
-
-
 
 
 ////////////////////////////////////////
@@ -106,8 +109,6 @@ inline u16 gameobj_get_sprite_id(GameObj *obj)
 
 inline void gameobj_set_sprite_id(GameObj *obj, u16 spr_id)
 {	obj->attr->attr2 = ((obj->attr->attr2 & ~ATTR2_ID_MASK) | ATTR2_ID(spr_id&ATTR2_ID_MASK));	};
-
-
 
 inline u8 gameobj_get_pal_id(GameObj *obj)
 {	return ((obj->attr->attr2)>>ATTR2_PALBANK_SHIFT)&0x0F;	};
@@ -135,12 +136,27 @@ inline void gameobj_set_sprite_size(GameObj *obj, u16 size)
 {	obj->attr->attr1 = ((obj->attr->attr1 & ~ATTR1_SIZE_MASK) | (size & ATTR1_SIZE_MASK));	};
 
 
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//////////////////////
+/// Init Functions ///
+//////////////////////
 
 GameObj *gameobj_init();
-GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, int x, int y, bool fixed_pos, u16 properties);
+GameObj *gameobj_init_of_type(ObjType type);
+GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, Vector2 pos, bool fixed_pos, u16 properties);
+// ui objs have fixed positions and do not interact with the game world
+GameObj *gameobj_init_ui(u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, Vector2 pos, u16 properties);
+// dynamic objs have histories and move around in the game world
+GameObj *gameobj_init_dynamic(u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, Vector2 pos, bool fixed_pos, u16 properties);
+// free objs can be whatever they want, but lose access to obj histories and other goodies
+GameObj *gameobj_init_free(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, Vector2 pos, bool fixed_pos, u16 properties);
+
+
+
+//////////////////////
+
+
 GameObj *gameobj_duplicate(GameObj *src);															// duplicate a GameObj into another slot in memory
 GameObj *gameobj_clone(GameObj *dest, GameObj *src);												// copy all attributes of a GameObj into another existing GameObj
 void gameobj_erase(GameObj *obj);																	// wipe all attributes of a GameObj and mark it as unused
@@ -148,7 +164,7 @@ void gameobj_erase_all();																			// wipe all attributes of all GameOb
 
 void gameobj_main_update(GameObj *obj);
 void gameobj_update_attr(GameObj *obj);
-void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, int x, int y, bool fixed_pos, u16 properties);
+void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, Vector2 pos, bool fixed_pos, u16 properties);
 
 void gameobj_set_property_flags(GameObj *obj, u16 properties);
 void gameobj_add_property_flags(GameObj *obj, u16 properties);

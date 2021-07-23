@@ -44,7 +44,6 @@ void ui_animate_gear_backward();
 GameObj *action_counter[ACTION_COUNTER_DIGITS];		// action counter objects
 int a_tile;											// tile of digit 0 
 
-
 static int true_action_count = 0;					// the actual action count, for gameplay purposes
 static int displayed_action_count = 0;				// the displayed action count, which will roll up or down until reaching the true action count
 static int count_rolling;							// whether or not to animate the counter changing (and in which direction)
@@ -87,14 +86,15 @@ void ui_init()
 
 	// init action counter
 	a_tile = mem_load_tiles(numbersTiles, numbersTilesLen);
+	Vector2 ui_pos;
 	for(int i = 0; i < ACTION_COUNTER_DIGITS; i++)
 	{
-		action_counter[i] = gameobj_init();
-		gameobj_set_layer_priority(action_counter[i], LAYER_OVERLAY);
+		ui_pos.x = ACTION_COUNTER_OFFSET_X + i*8;
+		ui_pos.y = ACTION_COUNTER_OFFSET_Y + 152;
+		action_counter[i] = gameobj_init_ui(ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_UI, a_tile, ui_pos, 0);
+		//gameobj_set_layer_priority(action_counter[i], LAYER_OVERLAY);
 		//action_counter[i]->layer_priority = LAYER_OVERLAY;
-		int ac_x = ACTION_COUNTER_OFFSET_X + i*8;
-		int ac_y = ACTION_COUNTER_OFFSET_Y + 152;
-		gameobj_update_attr_full(action_counter[i], ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_UI, a_tile, ac_x, ac_y, true, 0);
+		//gameobj_update_attr_full(action_counter[i], ATTR0_SQUARE, ATTR1_SIZE_8x8, PAL_ID_UI, a_tile, ui_pos, true, 0);
 	}
 	reset_action_count();
 
@@ -103,28 +103,27 @@ void ui_init()
 	t_tile = mem_load_tiles(timegaugeTiles, timegaugeTilesLen);
 	for(int i = 0; i < TIME_GAUGE_SEGMENTS; i++)
 	{
-		time_gauge[i] = gameobj_init();
-		gameobj_set_layer_priority(time_gauge[i], LAYER_OVERLAY);
 		//time_gauge[i]->layer_priority = LAYER_OVERLAY;
-		int tg_x = 26 + (i*8);
-		int tg_y = SCREEN_HEIGHT - 12;
+		ui_pos.x = 26 + (i*8);
+		ui_pos.y = SCREEN_HEIGHT - 12;
 		int tg_t = t_tile + (2*TG_END_OFFSET_L);
 		if(i == TIME_GAUGE_SEGMENTS-1)
 			tg_t += (2*TG_END_OFFSET_R);
 		else if(i > 0)
 			tg_t += (2*TG_OFFSET_MID);
-		gameobj_update_attr_full(time_gauge[i], ATTR0_TALL, ATTR1_SIZE_8x16, PAL_ID_UI, tg_t, tg_x, tg_y, true, 0);
-
+		time_gauge[i] = gameobj_init_ui(ATTR0_TALL, ATTR1_SIZE_8x16, PAL_ID_UI, tg_t, ui_pos, 0);
+		//gameobj_update_attr_full(time_gauge[i], ATTR0_TALL, ATTR1_SIZE_8x16, PAL_ID_UI, tg_t, ui_pos, true, 0);
 	}
 
 	// init hp icons
 	h_tile = mem_load_tiles(heartTiles, heartTilesLen);
 	for(int i = 0; i < PLAYER_HP_MAX; i++)
 	{
-		int h_x = (i*8) + 0 - (3*(i>>1));
-		int h_y = 0;
-		hearts[i] = gameobj_init_full(LAYER_OVERLAY, ATTR0_TALL, ATTR1_SIZE_8x16, PAL_ID_UI, h_tile, h_x, h_y, true, 0);
-		gameobj_set_base_spr_id(hearts[i], h_tile);
+		ui_pos.x = (i*8) + 0 - (3*(i>>1));
+		ui_pos.y = 0;
+		//hearts[i] = gameobj_init_full(LAYER_OVERLAY, ATTR0_TALL, ATTR1_SIZE_8x16, PAL_ID_UI, h_tile, ui_pos, true, 0);
+		hearts[i] = gameobj_init_ui(ATTR0_TALL, ATTR1_SIZE_8x16, PAL_ID_UI, h_tile, ui_pos, 0);
+		//gameobj_set_base_spr_id(hearts[i], h_tile);
 		//hearts[i]->base_spr_info = h_tile;
 		if(i % 2)
 			gameobj_set_flip_h(hearts[i], true);
@@ -132,11 +131,14 @@ void ui_init()
 
 
 	// init gear
-	gear = gameobj_init();
+	//gear = gameobj_init();
 	g_tile = mem_load_tiles(gearTiles, gearTilesLen);
 	gameobj_set_layer_priority(gear, LAYER_OVERLAY);
 	//gear->layer_priority = LAYER_OVERLAY;
-	gameobj_update_attr_full(gear, ATTR0_SQUARE, ATTR1_SIZE_32x32, PAL_ID_UI, g_tile, 0, 128, true, 0);
+	ui_pos.x = 0;
+	ui_pos.y = 128;
+	gear = gameobj_init_ui(ATTR0_SQUARE, ATTR1_SIZE_32x32, PAL_ID_UI, g_tile, ui_pos, 0);
+	//gameobj_update_attr_full(gear, ATTR0_SQUARE, ATTR1_SIZE_32x32, PAL_ID_UI, g_tile, ui_pos, true, 0);
 	AnimationData *gear_anim = animdata_create(g_tile, ANIM_OFFSET_32x32, 3, 0);
 	gameobj_set_anim_data(gear, gear_anim, 0);
 	//gameobj_set_anim_info(gear, 3, ANIM_OFFSET_32x32, 0, false);

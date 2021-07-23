@@ -448,3 +448,8 @@ bool time_charge_use()
 	}
 	return false;
 }
+
+void time_charge_increase(int amt)
+{
+	time_charges = min(time_charges+1, TIME_CHARGES_MAX);
+}
