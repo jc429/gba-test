@@ -11,6 +11,7 @@
 #include "sprites/objects/coin.h"
 #include "sprites/objects/obj_crate.h"
 #include "sprites/objects/victory_tile.h"
+#include "sprites/objects/launch_tile.h"
 #include "sprites/objects/spikes.h"
 
 // playerhealth.c
@@ -70,8 +71,11 @@ void objint_step_on(GameObj *target, GameObj *instigator)
 {
 	if(target == NULL) return;
 
+	// if launch tile
+	objint_push_gameobj(instigator, gameobj_get_facing(target));
+
 	// if spikes, damage instigator
-	objint_deal_damage(instigator, target);		// switching instigator and target here is intentional
+	//objint_deal_damage(instigator, target);		// switching instigator and target here is intentional
 
 	//create_effect_at_position(ET_SMOKE, target->tile_pos.x, target->tile_pos.y);
 }
@@ -139,12 +143,16 @@ void gameobj_fall(GameObj *obj, int tile_x, int tile_y)
 /// Interactable Objects ///
 ////////////////////////////
 
-GameObj *intobj_create_coin_at_position(int x, int y)
+GameObj *intobj_create_coin_at_position(int x, int y, u16 props)
 {
 	Vector2 c_pos;
 	vec2_set(&c_pos, x, y);
 	int c_tile = mem_load_tiles(spr_coinTiles, spr_coinTilesLen);
-	GameObj *coin = gameobj_init_dynamic(ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, c_tile, c_pos, false, OBJPROP_CANGRAB|OBJPROP_PICKUP);
+	int pal = PAL_ID_OBJS;
+	if(props & OBJPROP_TIME_IMMUNITY)
+		pal = PAL_ID_OBJS_TIME_IMMUNE;
+	props = props|OBJPROP_CANGRAB|OBJPROP_PICKUP;
+	GameObj *coin = gameobj_init_dynamic(ATTR0_SQUARE, ATTR1_SIZE_16x16, pal, c_tile, c_pos, false, props);
 	register_obj_history(coin);
 	gameobj_set_sprite_offset(coin,0,2);
 	place_obj_in_tile(coin, x, y);
@@ -154,12 +162,16 @@ GameObj *intobj_create_coin_at_position(int x, int y)
 	return coin;
 }
 
-GameObj *intobj_create_crate_at_position(int x, int y)
+GameObj *intobj_create_crate_at_position(int x, int y, u16 props)
 {
 	Vector2 c_pos;
 	vec2_set(&c_pos, x, y);
 	int c_tile = mem_load_tiles(obj_crateTiles, obj_crateTilesLen);
-	GameObj *crate = gameobj_init_dynamic(ATTR0_TALL, ATTR1_SIZE_16x32, PAL_ID_OBJS, c_tile, c_pos, false, OBJPROP_SOLID|OBJPROP_CANGRAB|OBJPROP_MOVABLE);
+	int pal = PAL_ID_OBJS;
+	if(props & OBJPROP_TIME_IMMUNITY)
+		pal = PAL_ID_OBJS_TIME_IMMUNE;
+	props = props|OBJPROP_SOLID|OBJPROP_CANGRAB|OBJPROP_MOVABLE;
+	GameObj *crate = gameobj_init_dynamic(ATTR0_TALL, ATTR1_SIZE_16x32, pal, c_tile, c_pos, false, props);
 	crate->hist = register_obj_history(crate);
 	crate->hist->update_func = crate_update_spr;
 	gameobj_set_sprite_offset(crate,0,8);
@@ -206,6 +218,21 @@ GameObj *floorobj_create_victory_tile_at_position(int x, int y)
 	gameobj_set_anim_data(vic_tile, vt_anim, ANIM_FLAG_LOOPING);
 	gameobj_play_anim(vic_tile);
 	return vic_tile;
+}
+
+
+GameObj *floorobj_create_launch_tile_at_position(int x, int y, int facing)
+{
+	int lt = mem_load_tiles(launch_tileTiles, launch_tileTilesLen);
+	Vector2 lt_pos;
+	vec2_set(&lt_pos, x, y);
+	GameObj *launch_tile = gameobj_init_dynamic(ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, lt, lt_pos, false, OBJPROP_TIME_IMMUNITY);
+	place_obj_in_tile_floor(launch_tile, x, y);
+	gameobj_set_facing(launch_tile, facing);
+	AnimationData *lt_anim = animdata_create(lt, 4, 4, 4);
+	gameobj_set_anim_data(launch_tile, lt_anim, ANIM_FLAG_LOOPING);
+	gameobj_play_anim(launch_tile);
+	return launch_tile;
 }
 
 

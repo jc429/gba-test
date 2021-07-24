@@ -3,15 +3,16 @@
 
 
 #define PAL_ID_UI 				0x0
+#define PAL_ID_EFF				0x0
 // player palette is 8 colors long, with grayscale variant in colors 9-16
 #define PAL_ID_PLAYER 			0x1
-#define PAL_ID_EFF				0x2
 // pals 4-7 repeat 3x, one base, one for grayscale and one for time-immune 
 #define PAL_ID_OBJS				0x3
-#define PAL_ID_OBJS_GRAY		0x3
+#define PAL_ID_OBJS_GRAY		0x4
+#define PAL_ID_OBJS_TIME_IMMUNE	0x5
 
 // 16th palette is dedicated to color cycling
-#define PAL_ID_GREENCYCLE		0xF
+#define PAL_ID_CYCLE			0xF
 
 #define PAL_COUNT				16
 

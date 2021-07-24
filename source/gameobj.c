@@ -844,7 +844,7 @@ void gameobj_push_changes(GameObj *obj)
 
 bool gameobj_ignores_time(GameObj *obj)
 {
-	return ((obj->obj_properties & OBJPROP_TIME_IMMUNITY) | (obj->base_spr_info & BSI_FIXED_POS) | obj_hidden(obj));
+	return ((obj->obj_properties & OBJPROP_TIME_IMMUNITY) || (obj->base_spr_info & BSI_FIXED_POS) || obj_hidden(obj));
 }
 
 // hide all GameObjs

@@ -2,12 +2,12 @@
 #include <string.h>
 #include "palettes.h"
 #include "regmem.h"
-#include "sprites/greencyclepal.h"
+#include "sprites/cyclepal.h"
 
 // TODO: replace these with dedicated palette headers 
 #include "sprites/player/spr_player.h"
 #include "sprites/ui/timegauge.h"
-#include "sprites/objects/victory_tile.h"
+#include "sprites/objects/launch_tile.h"
 #include "sprites/effects/eff_dust.h"
 
 int get_free_pal_id();
@@ -26,11 +26,12 @@ void load_level_select_palettes()
 
 void load_main_game_palettes()
 {
-	palette_load(spr_playerPal, PAL_ID_PLAYER);
 	palette_load(timegaugePal, PAL_ID_UI);
-	palette_load(eff_dustPal, PAL_ID_EFF);
-	palette_load(victory_tilePal, PAL_ID_OBJS);
+	palette_load(spr_playerPal, PAL_ID_PLAYER);
+	palette_load(launch_tilePal, PAL_ID_OBJS);
 
+	palette_load(launch_tilePal, PAL_ID_OBJS_GRAY);
+	palette_load(launch_tilePal, PAL_ID_OBJS_TIME_IMMUNE);
 }
 
 
@@ -84,13 +85,14 @@ void palette_activate_grayscale_mode()
 {
 	swap_bg_pal();
 	swap_8_colors(PAL_ID_PLAYER);
-
+	swap_palettes(PAL_ID_OBJS, PAL_ID_OBJS_GRAY);
 }
 
 void palette_deactivate_grayscale_mode()
 {
 	swap_bg_pal();
 	swap_8_colors(PAL_ID_PLAYER);
+	swap_palettes(PAL_ID_OBJS_GRAY, PAL_ID_OBJS);
 }
 
 
@@ -147,8 +149,8 @@ static int clr = 0;
 void color_cycle_init()
 {
 	clr = 0;
-	palette_load(greenCyclePal, PAL_ID_GREENCYCLE);
-	//pal_id = mem_load_palette(greenCyclePal, PAL_ID_GREENCYCLE);
+	palette_load(yellowCyclePal, PAL_ID_CYCLE);
+	//pal_id = mem_load_palette(greenCyclePal, PAL_ID_CYCLE);
 }
 
 // cycle color 
@@ -156,6 +158,6 @@ void color_cycle_update()
 {
 	clr = (clr+1) % 16;
 
+	pal_obj_bank[PAL_ID_OBJS_TIME_IMMUNE][1] = pal_obj_bank[PAL_ID_CYCLE][clr];
 	//pal_obj_bank[2][1] = pal_obj_bank[pal_id][clr];
-
 }

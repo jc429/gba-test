@@ -51,6 +51,8 @@ void playerobj_falling_start();
 void playerobj_falling_finish();
 void playerobj_damaged_start();
 void playerobj_damaged_finish();
+void playerobj_eat_start();
+void playerobj_eat_finish();
 void playerobj_die_start();
 void playerobj_die_finish();
 void playerobj_level_intro_start();
@@ -532,6 +534,21 @@ void playerobj_damaged_start()
 
 // called when timer ends
 void playerobj_damaged_finish()
+{
+	input_unlock(INPLCK_TIMER);
+	playerobj_play_anim(PAI_IDLE);
+	timer_clear(&player_timer);
+}
+
+void playerobj_eat_start()
+{
+	input_lock(INPLCK_TIMER);
+	playerobj_play_anim(PAI_NOM);
+	// wait a while, then return to last position
+	timer_init(&player_timer, 20, playerobj_eat_finish, TIMERFLAG_ENABLED);
+}
+
+void playerobj_eat_finish()
 {
 	input_unlock(INPLCK_TIMER);
 	playerobj_play_anim(PAI_IDLE);

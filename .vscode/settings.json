@@ -42,6 +42,7 @@
 		"map3overlay.h": "c",
 		"map5.h": "c",
 		"map8overlay.h": "c",
-		"eff_dust.h": "c"
+		"eff_dust.h": "c",
+		"launch_tile.h": "c"
 	}
 }

@@ -32,6 +32,8 @@ typedef enum TongueState_T{
 //#define TONGUE_EXT_PX	((TONGUE_EXT_TL*16)+8)		// max reach of tongue
 #define EXT_SPD			2	// how many pixels per frame the tongue extends/retracts
 
+// playerobj.c
+extern void playerobj_eat_start();
 // objhistory.c
 extern void history_update_all();
 // camera.c
@@ -158,10 +160,14 @@ void tongue_update_length()
 			tongue_extension -= EXT_SPD;
 			if(tongue_extension <= 0)
 			{
-				if(gameobj_check_properties(attached_obj,OBJPROP_SOLID) == 0)
-					objint_collect(attached_obj, tongue_owner);
+				GameObj *obj = attached_obj;
 				tongue_extension = 0;
 				tongue_store();
+				if(obj != NULL && gameobj_check_properties(obj,OBJPROP_SOLID) == 0)
+				{
+					objint_collect(obj, tongue_owner);
+					playerobj_eat_start();
+				}
 			}
 			break;
 		case TS_PULLING_PL:
@@ -424,6 +430,8 @@ void tongue_check()
 		{
 			tongue_attach_obj(obj);
 			input_unlock(INPLCK_TONGUE);
+			if(!gameobj_check_properties(obj, OBJPROP_SOLID))
+				tongue_retract();
 			return;
 		}
 	}

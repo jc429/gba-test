@@ -17,10 +17,11 @@ void objint_step_on(GameObj *target, GameObj *instigator);
 void objint_deal_damage(GameObj *target, GameObj *instigator);
 
 
-GameObj *intobj_create_coin_at_position(int x, int y);
-GameObj *intobj_create_crate_at_position(int x, int y);
+GameObj *intobj_create_coin_at_position(int x, int y, u16 props);
+GameObj *intobj_create_crate_at_position(int x, int y, u16 props);
 
 GameObj *floorobj_create_victory_tile_at_position(int x, int y);
+GameObj *floorobj_create_launch_tile_at_position(int x, int y, int facing);
 GameObj *floorobj_create_spikes_at_position(int x, int y);
 
 

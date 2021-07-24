@@ -1,5 +1,6 @@
 #include "map.h"
 #include "maps.h"
+#include "direction.h"
 #include "objinteract.h"
 #include "game.h"
 #include "gamedata.h"
@@ -88,13 +89,13 @@ void load_map_objs(int level_id)
 			player_start_x = 4;
 			player_start_y = 4;
 			floorobj_create_victory_tile_at_position(4,10);
-			intobj_create_crate_at_position(11,4);
+			intobj_create_crate_at_position(11,4,0);
 			break;
 		case 4:
 			player_start_x = 5;
 			player_start_y = 10;
 			floorobj_create_victory_tile_at_position(9,9);
-			intobj_create_crate_at_position(11,5);
+			intobj_create_crate_at_position(11,5,0);
 			break;
 		case 5:
 			player_start_x = 4;
@@ -110,26 +111,27 @@ void load_map_objs(int level_id)
 			player_start_x = 4;
 			player_start_y = 11;
 			floorobj_create_victory_tile_at_position(11,5);
-			intobj_create_crate_at_position(7,6);
-			intobj_create_crate_at_position(11,11);
+			intobj_create_crate_at_position(7,6,0);
+			intobj_create_crate_at_position(11,11,0);
 			break;
 		case 8:
 			player_start_x = 6;
 			player_start_y = 11;
 			floorobj_create_victory_tile_at_position(9,10);
-			intobj_create_crate_at_position(5,11);
-			intobj_create_crate_at_position(8,6);
+			intobj_create_crate_at_position(5,11,0);
+			intobj_create_crate_at_position(8,6,0);
 			break;
 		default:
 			player_start_x = 4;
 			player_start_y = 10;
 			floorobj_create_victory_tile_at_position(3,12);
-			intobj_create_crate_at_position(6,10);
-			intobj_create_crate_at_position(9,10);
-			intobj_create_crate_at_position(4,6);
-			intobj_create_coin_at_position(5,6);
-			intobj_create_coin_at_position(3,8);
-			intobj_create_coin_at_position(7,9);
+			intobj_create_crate_at_position(6,10,0);
+			intobj_create_crate_at_position(9,10,0);
+			intobj_create_crate_at_position(4,6,OBJPROP_TIME_IMMUNITY);
+			intobj_create_coin_at_position(5,6,0);
+			intobj_create_coin_at_position(3,8,0);
+			intobj_create_coin_at_position(7,9,OBJPROP_TIME_IMMUNITY);
+			floorobj_create_launch_tile_at_position(5,11,DIRECTION_EAST);
 			break;
 	}
 

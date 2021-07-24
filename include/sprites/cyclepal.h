@@ -14,12 +14,15 @@
 //
 //======================================================================
 
-#ifndef GRIT_GREENCYCLEPAL_H
-#define GRIT_GREENCYCLEPAL_H
+#ifndef CYCLEPAL_H
+#define CYCLEPAL_H
 
 #define greenCyclePalLen 32
 extern const unsigned short greenCyclePal[16];
 
-#endif // GRIT_GREENCYCLEPAL_H
+#define yellowCyclePalLen 32
+extern const unsigned short yellowCyclePal[16];
+
+#endif // CYCLEPAL_H
 
 //}}BLOCK(greenCyclePal)
