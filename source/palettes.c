@@ -32,6 +32,8 @@ void load_main_game_palettes()
 
 	palette_load(launch_tilePal, PAL_ID_OBJS_GRAY);
 	palette_load(launch_tilePal, PAL_ID_OBJS_TIME_IMMUNE);
+
+	color_cycle_init();
 }
 
 

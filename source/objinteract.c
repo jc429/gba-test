@@ -6,6 +6,7 @@
 #include "palettes.h"
 #include "regmem.h"
 #include "layers.h"
+#include "debug.h"
 
 
 #include "sprites/objects/coin.h"
@@ -14,6 +15,10 @@
 #include "sprites/objects/launch_tile.h"
 #include "sprites/objects/spikes.h"
 
+
+
+// playerobj.c
+extern void playerobj_victory_start();
 // playerhealth.c
 extern void playerhealth_take_damage();
 // playertongue.c
@@ -25,6 +30,13 @@ extern GameObj *tongue_get_attached_object();
 
 void objint_init();
 void crate_update_spr(GameObj *obj);
+
+
+// interact functions
+bool floorint_launch(GameObj *self, GameObj *instigator);
+bool floorint_spikes(GameObj *self, GameObj *instigator);
+bool floorint_victory(GameObj *self, GameObj *instigator);
+
 
 ////////////////////////
 /// Global Functions ///
@@ -46,10 +58,32 @@ void objint_push_gameobj(GameObj *obj, int push_dir)
 {
 	if(gameobj_check_properties(obj, OBJPROP_MOVABLE) != OBJPROP_MOVABLE)
 		return;
+	
 	gameobj_set_moving(obj, true, push_dir);
 	audio_play_sound(SFX_PUSH_BLOCK);
 	create_effect_at_position(ET_SMOKE, obj->tile_pos.x, obj->tile_pos.y, 0);
 	//create_effect_at_position(obj->tile_pos.x, obj->tile_pos.y);
+}
+
+void objint_launch_gameobj(GameObj *obj, int launch_dir)
+{
+	
+	if(gameobj_is_player(obj))
+	{
+		gameobj_set_facing(obj, launch_dir);
+
+	}
+	else
+	{
+		GameObj *tongue_obj = tongue_get_attached_object();
+		if(obj == tongue_obj)
+		{
+			debug_write_text("yup");
+			tongue_detach_obj();
+			tongue_retract();
+		}
+		gameobj_set_moving(obj, true, launch_dir);
+	}
 }
 
 // collect a (valid) game object
@@ -66,37 +100,16 @@ void objint_collect(GameObj *target, GameObj *instigator)
 	gameobj_erase(target);
 }
 
-// step on a floor object
-void objint_step_on(GameObj *target, GameObj *instigator)
-{
-	if(target == NULL) return;
-
-	// if launch tile
-	objint_push_gameobj(instigator, gameobj_get_facing(target));
-
-	// if spikes, damage instigator
-	//objint_deal_damage(instigator, target);		// switching instigator and target here is intentional
-
-	//create_effect_at_position(ET_SMOKE, target->tile_pos.x, target->tile_pos.y);
-}
-
-
-// take damage
-void objint_deal_damage(GameObj *target, GameObj *instigator)
-{
-	if(target == NULL) return;
-	if(gameobj_is_player(target))
-	{
-		playerhealth_take_damage();
-	}
-}
-
 
 
 bool objint_check_floor_tile(GameObj *obj, int tile_x, int tile_y)
 {
 	// hacky fix, replace
-	if(gameobj_is_player(obj))
+//	if(gameobj_is_player(obj))
+//		return true;
+		
+	// floor objs cannot interact with the floor for obvious reasons
+	if(gameobj_check_properties(obj, OBJPROP_FLOOROBJ))
 		return true;
 
 	bool tile_safe = true;
@@ -112,8 +125,41 @@ bool objint_check_floor_tile(GameObj *obj, int tile_x, int tile_y)
 		gameobj_fall(obj, tile_x, tile_y);
 		tile_safe = false;
 	}
+	if(floor_obj != NULL)
+	{
+		tile_safe &= objint_step_on(floor_obj, obj);
+	}
 	return tile_safe;
 }
+
+// step on a floor object
+bool objint_step_on(GameObj *target, GameObj *instigator)
+{
+	if(target == NULL) return true;
+	bool safe = true;
+	// if launch tile
+	if(target->interact != NULL)
+	{
+		safe = target->interact(target, instigator);
+	}
+	// TODO: returning false causes huge slowdown (bc its getting called every frame) so i need to fix that before removing this
+	return true;
+	return safe;
+}
+
+
+// take damage
+void objint_deal_damage(GameObj *target, GameObj *instigator)
+{
+	if(target == NULL) return;
+	if(gameobj_is_player(target))
+	{
+		playerhealth_take_damage();
+	}
+}
+
+
+
 
 void gameobj_fall(GameObj *obj, int tile_x, int tile_y)
 {
@@ -212,11 +258,13 @@ GameObj *floorobj_create_victory_tile_at_position(int x, int y)
 	Vector2 vt_pos;
 	vt_pos.x = x;
 	vt_pos.y = y;
-	GameObj *vic_tile = gameobj_init_dynamic(ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, vt, vt_pos, false, OBJPROP_TIME_IMMUNITY);
+	u16 props = OBJPROP_FLOOROBJ|OBJPROP_TIME_IMMUNITY;
+	GameObj *vic_tile = gameobj_init_dynamic(ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, vt, vt_pos, false, props);
 	place_obj_in_tile_floor(vic_tile, x, y);
 	AnimationData *vt_anim = animdata_create(vt, 4, 4, 0);
 	gameobj_set_anim_data(vic_tile, vt_anim, ANIM_FLAG_LOOPING);
 	gameobj_play_anim(vic_tile);
+	vic_tile->interact = floorint_victory;
 	return vic_tile;
 }
 
@@ -226,12 +274,14 @@ GameObj *floorobj_create_launch_tile_at_position(int x, int y, int facing)
 	int lt = mem_load_tiles(launch_tileTiles, launch_tileTilesLen);
 	Vector2 lt_pos;
 	vec2_set(&lt_pos, x, y);
-	GameObj *launch_tile = gameobj_init_dynamic(ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, lt, lt_pos, false, OBJPROP_TIME_IMMUNITY);
+	u16 props = OBJPROP_LAUNCHPAD|OBJPROP_FLOOROBJ|OBJPROP_TIME_IMMUNITY;
+	GameObj *launch_tile = gameobj_init_dynamic(ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, lt, lt_pos, false, props);
 	place_obj_in_tile_floor(launch_tile, x, y);
 	gameobj_set_facing(launch_tile, facing);
 	AnimationData *lt_anim = animdata_create(lt, 4, 4, 4);
 	gameobj_set_anim_data(launch_tile, lt_anim, ANIM_FLAG_LOOPING);
 	gameobj_play_anim(launch_tile);
+	launch_tile->interact = floorint_launch;
 	return launch_tile;
 }
 
@@ -244,7 +294,28 @@ GameObj *floorobj_create_spikes_at_position(int x, int y)
 	s_pos.y = y;
 	GameObj *spikes = gameobj_init_dynamic(ATTR0_SQUARE, ATTR1_SIZE_16x16, PAL_ID_OBJS, s_tile, s_pos, false, 0);
 	place_obj_in_tile_floor(spikes, x, y);
-	
+	spikes->interact = floorint_spikes;
 	return spikes;
 }
 
+bool floorint_launch(GameObj *self, GameObj *instigator)
+{
+	objint_launch_gameobj(instigator, gameobj_get_facing(self));
+	return false;
+}
+
+bool floorint_spikes(GameObj *self, GameObj *instigator)
+{
+	objint_deal_damage(instigator, self);	// intentional flip of parameters
+	return true;
+}
+
+bool floorint_victory(GameObj *self, GameObj *instigator)
+{
+	if(gameobj_is_player(instigator))
+	{
+		playerobj_victory_start();
+		return false;
+	}
+	return true;
+}

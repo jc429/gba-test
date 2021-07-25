@@ -168,6 +168,7 @@ void tongue_update_length()
 					objint_collect(obj, tongue_owner);
 					playerobj_eat_start();
 				}
+				gameobj_check_floor_dynamic();
 			}
 			break;
 		case TS_PULLING_PL:
@@ -186,7 +187,8 @@ void tongue_update_length()
 				tongue_extension = tongue_len_bonus - 8;
 				tongue_store();
 				playerobj_finalize_movement();
-				finalize_turn();
+				gameobj_check_floor_dynamic();
+				//finalize_turn();
 			}
 			camera_update_pos();
 			break;

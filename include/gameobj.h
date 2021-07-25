@@ -30,6 +30,8 @@ typedef struct struct_GameObj {
 	Vector2 pixel_pos;					// position relative to tile (in pixels) or position on screen if in FIXED_POS mode
 	Vector2 spr_off;					// offset from top left pixel of sprite to top left corner of its position
 
+
+	bool (*interact)(struct struct_GameObj *self, struct struct_GameObj *instigator);		// interaction function
 	Animation anim;						// animation info
 	struct struct_ObjHistory *hist;		// object history - used by dynamic objs for time travel
 } GameObj;
@@ -89,6 +91,7 @@ inline bool gameobj_check_fixed_pos(GameObj *obj)
 
 #define OBJPROP_CANGRAB			0x0010		// can the player latch onto the object with its tongue?
 
+#define OBJPROP_LAUNCHPAD		0x0400		// if set, this obj will launch the obj that steps on it in a direction (temp)
 #define OBJPROP_FLOOROBJ		0x0800		// if set, this obj exists as a floor obj (as opposed to a world obj)
 
 #define OBJPROP_MOVING			0x1000		// is the object currently moving
@@ -138,12 +141,12 @@ inline void gameobj_set_sprite_size(GameObj *obj, u16 size)
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 //////////////////////
 /// Init Functions ///
 //////////////////////
 
-GameObj *gameobj_init();
-GameObj *gameobj_init_of_type(ObjType type);
+
 GameObj *gameobj_init_full(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, Vector2 pos, bool fixed_pos, u16 properties);
 // ui objs have fixed positions and do not interact with the game world
 GameObj *gameobj_init_ui(u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, Vector2 pos, u16 properties);
@@ -151,7 +154,7 @@ GameObj *gameobj_init_ui(u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_in
 GameObj *gameobj_init_dynamic(u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, Vector2 pos, bool fixed_pos, u16 properties);
 // free objs can be whatever they want, but lose access to obj histories and other goodies
 GameObj *gameobj_init_free(u16 layer_priority, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_info, Vector2 pos, bool fixed_pos, u16 properties);
-
+GameObj *gameobj_init_blank();
 
 
 //////////////////////
@@ -162,7 +165,6 @@ GameObj *gameobj_clone(GameObj *dest, GameObj *src);												// copy all attr
 void gameobj_erase(GameObj *obj);																	// wipe all attributes of a GameObj and mark it as unused
 void gameobj_erase_all();																			// wipe all attributes of all GameObjs
 
-void gameobj_main_update(GameObj *obj);
 void gameobj_update_attr(GameObj *obj);
 void gameobj_update_attr_full(GameObj *obj, u16 attr0_shape, u16 attr1_size, u8 palbank, u16 spr_id, Vector2 pos, bool fixed_pos, u16 properties);
 
@@ -204,6 +206,8 @@ void gameobj_set_moving(GameObj *obj, bool moving, int move_dir);
 void gameobj_set_moving_vec(GameObj *obj, bool moving, Vector2 move_dir);
 bool gameobj_is_moving(GameObj *obj);													
 bool gameobj_all_at_rest();																// returns true when all GameObjs have finished moving
+bool gameobj_check_floor_dynamic();
+
 
 bool gameobj_ignores_time(GameObj *obj);
 

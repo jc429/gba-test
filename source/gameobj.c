@@ -8,7 +8,7 @@
 #include "objhistory.h"
 #include "animation.h"
 #include "map.h"
-
+#include "debug.h"
 
 #define ATTR_COUNT 128			// max number of attrs
 #define OBJ_COUNT 128			// max number of objs
@@ -24,6 +24,8 @@
 
 
 GameObj *create_gameobj_with_id(u8 obj_id);
+GameObj *gameobj_init();
+GameObj *gameobj_init_of_type(ObjType type);
 
 void gameobj_update_all();
 void gameobj_update(GameObj *obj);
@@ -138,7 +140,7 @@ GameObj *create_gameobj_with_id(u8 obj_id)
 
 	obj->tile_pos.x = 0;
 	obj->tile_pos.y = 0;
-
+	obj->interact = NULL;
 	obj->hist = NULL;
 	anim_clear(&obj->anim);
 	//obj->anim = anim_create(ANIM_OFFSET_16x16, 1, 0);	// default offset for 16x16 sprite size
@@ -332,6 +334,10 @@ GameObj *gameobj_init_free(u16 layer_priority, u16 attr0_shape, u16 attr1_size, 
 }
 
 
+GameObj *gameobj_init_blank()
+{
+	return gameobj_init_of_type(OT_FREE);
+}
 
 ///////////////////////////////////////
 
@@ -367,7 +373,7 @@ GameObj *gameobj_clone(GameObj *dest, GameObj *src)
 	dest->anim.flags = src->anim.flags;
 	// do not copy these -- remake from scratch
 	//obj->hist = src->hist;
-
+	dest->interact = src->interact;
 	obj_set_attr(dest->attr, src->attr->attr0, src->attr->attr1, src->attr->attr2);
 	gameobj_update_pos(dest);
 
@@ -393,6 +399,7 @@ void gameobj_erase(GameObj *obj)
 	obj->tile_pos.x = 0;
 	obj->tile_pos.y = 0;
 
+	obj->interact = NULL;
 	if(obj->hist != NULL)
 		clear_obj_history(obj->hist);
 	obj->hist = NULL;
@@ -684,10 +691,10 @@ void gameobj_update_current_tile(GameObj *obj)
 	GameObj *floor_obj = get_tile_floor_contents(obj->tile_pos.x, obj->tile_pos.y);
 	if(floor_obj != NULL)
 	{
-		objint_step_on(floor_obj, obj);
+	//	objint_step_on(floor_obj, obj);
 	}
 
-	objint_check_floor_tile(obj, obj->tile_pos.x, obj->tile_pos.y);
+	//objint_check_floor_tile(obj, obj->tile_pos.x, obj->tile_pos.y);
 }
 
 
@@ -785,22 +792,34 @@ void gameobj_update_movement(GameObj *obj)
 	
 	if(mov.x == 0 && mov.y == 0)
 	{
-		gameobj_update_current_tile(obj);
 		gameobj_set_moving(obj, false, 0);
+		gameobj_update_current_tile(obj);
 	}
 }
 
 // returns true if no gameobjs are in motion (used to check for turn end)
 bool gameobj_all_at_rest()
 {
-	for(int i = 0; i < OBJ_COUNT; i++)
+	for(int i = 0; i < OBJLIST_DYNAMIC_COUNT; i++)
 	{
-		if(gameobj_check_properties(&obj_list[i], OBJPROP_MOVING|OBJPROP_FALLING))
+		if(gameobj_check_properties(&obj_list[i+OBJLIST_DYNAMIC_OFFSET], OBJPROP_MOVING|OBJPROP_FALLING))
 			return false;
 	}
 	return true;
 }
 
+
+bool gameobj_check_floor_dynamic()
+{
+	bool all_safe = true;
+	for(int i = 0; i < OBJLIST_DYNAMIC_COUNT; i++)
+	{
+		Vector2 v = obj_list[i+OBJLIST_DYNAMIC_OFFSET].tile_pos;
+		bool safe = objint_check_floor_tile(&obj_list[i+OBJLIST_DYNAMIC_OFFSET], v.x, v.y);
+		all_safe &= safe;
+	}
+	return all_safe;
+}
 
 
 // push changes to a GameObj's position, animation, and palette

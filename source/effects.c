@@ -34,7 +34,7 @@ void effects_init()
 		effects[i].in_use = false;
 		effects[i].eff_duration = 0;
 		effects[i].eff_timer = 0;
-		effects[i].obj = gameobj_init();
+		effects[i].obj = gameobj_init_blank();
 	}
 
 	

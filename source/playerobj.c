@@ -101,7 +101,7 @@ void playerobj_init()
 		p_tile_start, 
 		p_pos,
 		false,
-		OBJPROP_SOLID
+		OBJPROP_SOLID|OBJPROP_MOVABLE
 		);
 	register_obj_history(player_obj);
 	player_anim_init();
@@ -453,9 +453,14 @@ void playerobj_finalize_movement()
 		playerobj_play_anim(PAI_IDLE);
 	
 	// unlock right here bc we might immediately need to re-lock
-	input_unlock(INPLCK_PLAYER);
+	//input_unlock(INPLCK_PLAYER);
 	// check floor tile
 	playerobj_check_floor_tile(player_obj->tile_pos.x, player_obj->tile_pos.y);
+	GameObj *floor_obj = get_tile_floor_contents(player_obj->tile_pos.x, player_obj->tile_pos.y);
+	if(floor_obj != NULL)
+	{
+	//	objint_step_on(floor_obj, player_obj);
+	}
 }
 
 // returns true if the player will successfully stay in the current tile
@@ -577,6 +582,7 @@ void playerobj_die_finish()
 
 void playerobj_level_intro_start()
 {
+	input_unlock_override_all();
 	input_lock(INPLCK_TIMER);
 	playerobj_play_anim(PAI_INTRO);
 	timer_init(&player_timer, 50, playerobj_level_intro_finish, TIMERFLAG_ENABLED);

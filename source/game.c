@@ -186,18 +186,25 @@ void action_update()
 // update that occurs after all pieces have settled
 void finalize_turn()
 {
-	// update all obj histories
-	history_update_all();
+	
+
+	// floor check
+	bool safe = gameobj_check_floor_dynamic();
 
 	// check if the player has been damaged this turn, and apply damage if so
 	playerhealth_damage_check();
 	// check if the player has died 
 	playerhealth_death_check();
 
-	// turn_count_increment();
-	input_unlock(INPLCK_PLAYER);
-	// deactivate turn 
-	turn_active = false;
+	if(safe)
+	{
+		// update all obj histories
+		history_update_all();
+		// turn_count_increment();
+		input_unlock(INPLCK_PLAYER);
+		// deactivate turn 
+		turn_active = false;
+	}
 }
 
 

@@ -382,6 +382,7 @@ void history_mode_disable()
 	audio_play_sound(SFX_TICK_UP);
 	// color palette
 	palette_deactivate_grayscale_mode();
+	gameobj_check_floor_dynamic();
 }
 
 bool history_mode_active()
