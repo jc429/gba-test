@@ -6,6 +6,8 @@
 #include "palettes.h"
 #include "regmem.h"
 #include "layers.h"
+#include "playerobj.h"
+#include "direction.h"
 #include "debug.h"
 
 
@@ -18,6 +20,8 @@
 
 
 // playerobj.c
+extern void playerobj_move(int move_x, int move_y);
+extern bool playerobj_launch(int launch_dir);
 extern void playerobj_victory_start();
 // playerhealth.c
 extern void playerhealth_take_damage();
@@ -65,24 +69,43 @@ void objint_push_gameobj(GameObj *obj, int push_dir)
 	//create_effect_at_position(obj->tile_pos.x, obj->tile_pos.y);
 }
 
-void objint_launch_gameobj(GameObj *obj, int launch_dir)
+bool objint_launch_gameobj(GameObj *obj, int launch_dir)
 {
 	
 	if(gameobj_is_player(obj))
 	{
-		gameobj_set_facing(obj, launch_dir);
-
+		return playerobj_launch(launch_dir);
 	}
 	else
 	{
 		GameObj *tongue_obj = tongue_get_attached_object();
 		if(obj == tongue_obj)
 		{
-			debug_write_text("yup");
 			tongue_detach_obj();
 			tongue_retract();
 		}
+		Vector2 launch_vec = dir_to_vec(launch_dir);
+		Vector2 tile_start = obj->tile_pos;
+		Vector2 tile_end;
+		vec2_set(&tile_end, tile_start.x + launch_vec.x, tile_start.y + launch_vec.y);
+		tile_end = map_constrain_vector(tile_end);
+		if((tile_end.x == tile_start.x)&&(tile_end.y == tile_start.y))
+		{
+			return false;
+		}
+		if(get_tile_properties(tile_end.x, tile_end.y) & TILEPROP_SOLID)
+		{
+			return false;
+		}
+		GameObj *contents = get_tile_contents(tile_end.x, tile_end.y);
+		if(contents != NULL && gameobj_check_properties(contents, OBJPROP_SOLID))
+		{
+			return false;
+		}
+
+		gameobj_add_property_flags(obj, OBJPROP_LAUNCHED);
 		gameobj_set_moving(obj, true, launch_dir);
+		return true;
 	}
 }
 
@@ -137,13 +160,12 @@ bool objint_step_on(GameObj *target, GameObj *instigator)
 {
 	if(target == NULL) return true;
 	bool safe = true;
-	// if launch tile
 	if(target->interact != NULL)
 	{
 		safe = target->interact(target, instigator);
 	}
 	// TODO: returning false causes huge slowdown (bc its getting called every frame) so i need to fix that before removing this
-	return true;
+	//return true;
 	return safe;
 }
 
@@ -298,10 +320,15 @@ GameObj *floorobj_create_spikes_at_position(int x, int y)
 	return spikes;
 }
 
+
+
+////////////////////////////////
+/// Floor Interact Functions ///
+////////////////////////////////
+
 bool floorint_launch(GameObj *self, GameObj *instigator)
 {
-	objint_launch_gameobj(instigator, gameobj_get_facing(self));
-	return false;
+	return !objint_launch_gameobj(instigator, gameobj_get_facing(self));
 }
 
 bool floorint_spikes(GameObj *self, GameObj *instigator)
@@ -312,7 +339,7 @@ bool floorint_spikes(GameObj *self, GameObj *instigator)
 
 bool floorint_victory(GameObj *self, GameObj *instigator)
 {
-	if(gameobj_is_player(instigator))
+	if(gameobj_is_player(instigator) && !playerobj_is_intangible())
 	{
 		playerobj_victory_start();
 		return false;

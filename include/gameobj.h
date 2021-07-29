@@ -92,6 +92,7 @@ inline bool gameobj_check_fixed_pos(GameObj *obj)
 #define OBJPROP_CANGRAB			0x0010		// can the player latch onto the object with its tongue?
 
 #define OBJPROP_LAUNCHPAD		0x0400		// if set, this obj will launch the obj that steps on it in a direction (temp)
+#define OBJPROP_LAUNCHED		0x0400		// if set, this obj will be flung in an arc instead of sliding across the ground (should be safe sharing a bit with launchpad, but we will see)
 #define OBJPROP_FLOOROBJ		0x0800		// if set, this obj exists as a floor obj (as opposed to a world obj)
 
 #define OBJPROP_MOVING			0x1000		// is the object currently moving

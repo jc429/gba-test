@@ -21,6 +21,8 @@ extern void map_init();					// map.c
 extern void set_game_state(GameState state);
 extern void game_update_main();
 extern void update_world_pos();
+// gamesettings.c
+extern void gamesettings_init();
 // text.c
 extern void textsys_init();
 // level.c
@@ -166,6 +168,7 @@ void global_init()
 	//set_game_state(GS_DEBUG);
 	set_game_state(GS_STARTUP);
 	gamedata_init();
+	gamesettings_init();
 
 	// GBA interrupt setup
 	irq_init(NULL);

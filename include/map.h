@@ -2,6 +2,7 @@
 #define MAP_H
 
 #include <tonc.h>
+#include "vector2.h"
 
 #define MAP_SIZE_X 16
 #define MAP_SIZE_Y 16
@@ -32,6 +33,7 @@ void load_level_info();
 void save_level_info();
 
 /// map.c ///
+Vector2 map_constrain_vector(Vector2 input);
 void map_init();
 void load_map_from_current_data();
 

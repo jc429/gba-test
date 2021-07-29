@@ -205,6 +205,8 @@ void finalize_turn()
 		// deactivate turn 
 		turn_active = false;
 	}
+
+	debug_write_int(input_current_lock());
 }
 
 

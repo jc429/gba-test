@@ -131,7 +131,9 @@ void load_map_objs(int level_id)
 			intobj_create_coin_at_position(5,6,0);
 			intobj_create_coin_at_position(3,8,0);
 			intobj_create_coin_at_position(7,9,OBJPROP_TIME_IMMUNITY);
+			floorobj_create_launch_tile_at_position(5,9,DIRECTION_NORTH);
 			floorobj_create_launch_tile_at_position(5,11,DIRECTION_EAST);
+			floorobj_create_launch_tile_at_position(6,11,DIRECTION_SOUTH);
 			break;
 	}
 

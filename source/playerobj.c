@@ -1,6 +1,7 @@
 #include <tonc.h>
 #include "debug.h"
 #include "game.h"
+#include "gamesettings.h"
 #include "vector2.h"
 #include "timer.h"
 #include "direction.h"
@@ -16,11 +17,6 @@
 #include "regmem.h"
 #include "palettes.h"
 #include "effects.h"
-
-#define PLAYER_START_X			5		// player starting location (temp)
-#define PLAYER_START_Y			5		// player starting location (temp)
-
-const int hop_arc[16] = {0, 2, 4, 5, 6, 7, 7, 8, 8, 7, 7, 6, 5, 4, 2, 0};
 
 // main.c
 extern void action_update();
@@ -44,6 +40,7 @@ void playerobj_update_facing(int x, int y);
 void playerobj_move(int move_x, int move_y);
 void playerobj_update_movement();
 void playerobj_hop_in_place();
+bool playerobj_launch(int launch_dir);
 void playerobj_finalize_movement();
 
 // timed actions
@@ -62,25 +59,27 @@ void playerobj_victory_finish();
 void playerobj_timestop_start();
 void playerobj_timestop_finish();
 
+extern const int launch_arc[16];
+
 static GameObj *player_obj;
 static AnimationData *player_anims[PAI_COUNT];
 static Timer player_timer;
-static Timer die_timer;			// yet another crunch-inspired hacky fix -- death shouldn't need its own separate timer, and yet...
+static Timer die_timer;				// yet another crunch-inspired hacky fix -- death shouldn't need its own separate timer, and yet...
 
-//static int p_palette;			// index of player palette in memory
-static int p_tile_start;		// index of first tile of player sheet in memory
+//static int p_palette;				// index of player palette in memory
+static int p_tile_start;			// index of first tile of player sheet in memory
 
-static Vector2 start_tile;		// start tile (for movement)
-static Vector2 end_tile;		// end tile (for movement)
-static Vector2 offset;			// pixel offset within one tile
-static Vector2 mov;				// x and y speed+direction of current movement
+static Vector2 last_stable_tile;	// the last safe piece of ground we were on (for resetting after falls)
+static Vector2 start_tile;			// start tile (for movement)
+static Vector2 end_tile;			// end tile (for movement)
+static Vector2 offset;				// pixel offset within one tile
+static Vector2 mov;					// x and y speed+direction of current movement
 #define HOP_DURATION 16
 static int hop_time;			
-static int hop_offset;			// number of pixels to shove sprite vertically to simulate hopping
+static int hop_offset;				// number of pixels to shove sprite vertically to simulate hopping
 
-
-static int mov_buffer;			// small buffer after changing facing direction but before moving
-
+static int dir_buffer;				// small buffer after changing facing direction but before moving
+static bool player_intangible;		// when set, player does not interact with level
 
 GameObj *get_player_obj()
 {
@@ -116,6 +115,7 @@ void playerobj_init()
 	
 	timer_init(&player_timer, 0, NULL, 0);
 	hop_time = 0;
+	player_intangible = false;
 }
 
 
@@ -194,7 +194,7 @@ void playerobj_input_direction(int input_x, int input_y)
 	// can't move if no inputs
 	if(input_x == 0 && input_y == 0)
 	{
-		mov_buffer = 0;
+		dir_buffer = 0;
 		return;
 	}
 
@@ -210,8 +210,8 @@ void playerobj_input_direction(int input_x, int input_y)
 	}
 	
 	// TODO: add a ~3 frame buffer for the input to be held before committing to movement
-	mov_buffer++;
-	if(mov_buffer >= INPUT_MOV_BUFFER)
+	dir_buffer++;
+	if(dir_buffer >= gamesettings_move_sensitivity_get())
 		playerobj_move(input_x, input_y);
 }
 
@@ -242,30 +242,19 @@ void playerobj_move(int move_x, int move_y)
 	start_tile.y = player_obj->tile_pos.y;
 	end_tile.x = start_tile.x + move_x;
 	end_tile.y = start_tile.y + move_y;
-
 	// constrain player movement to map boundaries
-	if(end_tile.x < 0)
+	end_tile = map_constrain_vector(end_tile);
+	// stop moving if no valid motion remaining
+	if(end_tile.x == start_tile.x)
 	{
-		end_tile.x = 0;
 		move_x = 0;
-		return;
 	}
-	if(end_tile.x >= MAP_SIZE_X)
+	if(end_tile.y == start_tile.y)
 	{
-		end_tile.x = MAP_SIZE_X-1;
-		move_x = 0;
-		return;
-	}
-	if(end_tile.y < 0)
-	{
-		end_tile.y = 0;
 		move_y = 0;
-		return;
 	}
-	if(end_tile.y >= MAP_SIZE_Y)
+	if(move_x == 0 && move_y == 0)
 	{
-		end_tile.y = MAP_SIZE_Y-1;
-		move_y = 0;
 		return;
 	}
 
@@ -385,7 +374,7 @@ void playerobj_update_movement()
 	offset.y += mov.y;
 
 	//update hop offset
-	hop_offset = hop_arc[HOP_DURATION - hop_time];
+	hop_offset = launch_arc[HOP_DURATION - hop_time];
 
 	// check if we moved a full tile, and if so, stop movement 
 	if((offset.x >= GAME_TILE_SIZE) || (offset.x <= -GAME_TILE_SIZE))
@@ -442,10 +431,72 @@ void playerobj_hop_in_place()
 	action_update();
 }
 
+bool playerobj_launch(int launch_dir)
+{
+	if(check_tongue_out())
+	{
+		tongue_detach();
+		tongue_retract();
+	}
+	gameobj_set_facing(player_obj, launch_dir);
+	
+	mov = dir_to_vec(launch_dir);
+	start_tile.x = player_obj->tile_pos.x;
+	start_tile.y = player_obj->tile_pos.y;
+	end_tile.x = start_tile.x + mov.x;
+	end_tile.y = start_tile.y + mov.y;
+	// constrain player movement to map boundaries
+	end_tile = map_constrain_vector(end_tile);
+	// stop moving if no valid motion remaining
+	if(end_tile.x == start_tile.x)
+	{
+		mov.x = 0;
+	}
+	if(end_tile.y == start_tile.y)
+	{
+		mov.y = 0;
+	}
+	if(mov.x == 0 && mov.y == 0)
+	{
+		//playerobj_hop_in_place();
+		return false;
+	}
+	if(get_tile_properties(end_tile.x, end_tile.y) & TILEPROP_SOLID)
+	{
+		//playerobj_hop_in_place();
+		return false;
+	}
+	GameObj *contents = get_tile_contents(end_tile.x, end_tile.y);
+	if(contents != NULL && gameobj_check_properties(contents, OBJPROP_SOLID))
+	{
+		//playerobj_hop_in_place();
+		return false;
+	}
 
+	// reset offsets (should already be 0 but just in case)
+	offset.x = 0;
+	offset.y = 0;
+	hop_offset = 0;
+	hop_time = HOP_DURATION;
+	// set mov values
+	mov.x = mov.x * PLAYER_MOVE_SPEED;
+	mov.y = mov.y * PLAYER_MOVE_SPEED;
+	// lock inputs
+	input_lock(INPLCK_PLAYER);
+	// mark player as moving
+	gameobj_add_property_flags(player_obj, OBJPROP_LAUNCHED);
+	gameobj_set_moving(player_obj, true, launch_dir);
+	// play hop anim
+	if(!check_tongue_out())
+		playerobj_play_anim(PAI_HOP);
+	// play hop sfx
+	audio_play_sound(SFX_FROG_HOP);
+	return true;
+}
 
 void playerobj_finalize_movement()
 {
+	gameobj_remove_property_flags(player_obj, OBJPROP_LAUNCHED);
 	gameobj_set_moving(player_obj,false, 0);
 	gameobj_update_current_tile(player_obj);
 
@@ -456,11 +507,11 @@ void playerobj_finalize_movement()
 	//input_unlock(INPLCK_PLAYER);
 	// check floor tile
 	playerobj_check_floor_tile(player_obj->tile_pos.x, player_obj->tile_pos.y);
-	GameObj *floor_obj = get_tile_floor_contents(player_obj->tile_pos.x, player_obj->tile_pos.y);
-	if(floor_obj != NULL)
-	{
+	//GameObj *floor_obj = get_tile_floor_contents(player_obj->tile_pos.x, player_obj->tile_pos.y);
+	//if(floor_obj != NULL)
+	//{
 	//	objint_step_on(floor_obj, player_obj);
-	}
+	//}
 }
 
 // returns true if the player will successfully stay in the current tile
@@ -485,6 +536,16 @@ bool playerobj_check_floor_tile(int tile_x, int tile_y)
 	{
 		playerobj_falling_start();
 		tile_safe = false;
+	}
+	else if(fo_props & OBJPROP_LAUNCHPAD)
+	{
+		objint_launch_gameobj(player_obj, gameobj_get_facing(floor_obj));
+		tile_safe = false;
+	}
+	if(tile_safe)
+	{
+		last_stable_tile.x = tile_x;
+		last_stable_tile.y = tile_y;
 	}
 	return tile_safe;
 }
@@ -511,12 +572,14 @@ void playerobj_falling_start()
 	remove_tile_contents(player_obj, player_obj->tile_pos.x, player_obj->tile_pos.y);
 	// wait a while, then return to last position
 	timer_init(&player_timer, 50, playerobj_falling_finish, TIMERFLAG_ENABLED);
+	player_intangible = true;
 }
 
 // called when timer ends
 void playerobj_falling_finish()
 {
-	gameobj_set_tile_pos(player_obj,start_tile.x, start_tile.y);
+	player_intangible = false;
+	gameobj_set_tile_pos(player_obj,last_stable_tile.x, last_stable_tile.y);
 	gameobj_update_current_tile(player_obj);
 	gameobj_remove_property_flags(player_obj, OBJPROP_FALLING);
 	timer_clear(&player_timer);
@@ -531,6 +594,7 @@ void playerobj_falling_finish()
 
 void playerobj_damaged_start()
 {
+	player_intangible = true;
 	input_lock(INPLCK_TIMER);
 	playerobj_play_anim(PAI_HURT);
 	// wait a while, then return to last position
@@ -540,6 +604,7 @@ void playerobj_damaged_start()
 // called when timer ends
 void playerobj_damaged_finish()
 {
+	player_intangible = false;
 	input_unlock(INPLCK_TIMER);
 	playerobj_play_anim(PAI_IDLE);
 	timer_clear(&player_timer);
@@ -563,6 +628,7 @@ void playerobj_eat_finish()
 
 void playerobj_die_start()
 {
+	player_intangible = true;
 	input_lock(INPLCK_TIMER);
 	playerobj_play_anim(PAI_DIE);
 	audio_stop_track();
@@ -574,6 +640,7 @@ void playerobj_die_start()
 // called when timer ends
 void playerobj_die_finish()
 {
+	player_intangible = false;
 	input_unlock(INPLCK_TIMER);
 	playerobj_play_anim(PAI_IDLE);
 	timer_clear(&die_timer);
@@ -598,6 +665,7 @@ void playerobj_level_intro_finish()
 
 void playerobj_victory_start()
 {
+	player_intangible = true;
 	input_lock(INPLCK_TIMER);
 	playerobj_play_anim(PAI_VICTORY);
 	audio_stop_track();
@@ -608,6 +676,7 @@ void playerobj_victory_start()
 // called when timer ends
 void playerobj_victory_finish()
 {
+	player_intangible = false;
 	input_unlock(INPLCK_TIMER);
 	playerobj_play_anim(PAI_IDLE);
 	timer_clear(&player_timer);
@@ -616,12 +685,14 @@ void playerobj_victory_finish()
 
 void playerobj_timestop_start()
 {
+	player_intangible = true;
 	input_lock(INPLCK_TIMER);
 	timer_init(&player_timer, 20, playerobj_timestop_finish, TIMERFLAG_ENABLED);
 }
 // called when timer ends
 void playerobj_timestop_finish()
 {
+	player_intangible = false;
 	input_unlock(INPLCK_TIMER);
 	timer_clear(&player_timer);
 }
@@ -673,4 +744,9 @@ int playerobj_current_hop_height()
 bool gameobj_is_player(GameObj *obj)
 {
 	return (obj == player_obj && obj != NULL);
+}
+
+bool playerobj_is_intangible()
+{
+	return player_intangible;
 }

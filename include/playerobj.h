@@ -35,4 +35,7 @@ void playerobj_action_secondary();			// perform the B press action
 
 GameObj *get_player_obj();
 
+bool playerobj_is_intangible();
+
+
 #endif //PLAYEROBJ_H

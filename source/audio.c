@@ -2,8 +2,10 @@
 #include <tonc.h>
 #include "audio.h"
 #include "soundbank_bin.h"
+#include "gamesettings.h"
 #include "debug.h"
 
+#define AUDIO_VOLUME_STEP			64	// multiply this by volume step to create actual volume
 
 static bool muted;
 
@@ -19,7 +21,7 @@ void audio_init()
 	// Initialize maxmod with default settings
 	// pass soundbank address, and allocate 8 channels.
 	mmInitDefault((mm_addr)soundbank_bin, 8);
-	mmSetModuleVolume(768);
+	audio_set_volume(gamesettings_audio_volume_get());
 }
 
 
@@ -74,4 +76,9 @@ void audio_play_sound(int sound_id)
 void audio_stop_sounds()
 {
 	mmEffectCancelAll();
+}
+
+void audio_set_volume(int volume)
+{
+	mmSetModuleVolume(volume * AUDIO_VOLUME_STEP);
 }

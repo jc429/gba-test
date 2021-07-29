@@ -30,6 +30,14 @@ MapTile map_tiles[MAP_SIZE];
 
 
 
+Vector2 map_constrain_vector(Vector2 input)
+{
+	input.x = clamp(input.x, 0, MAP_SIZE_X);
+	input.y = clamp(input.y, 0, MAP_SIZE_Y);
+	return input;
+}
+
+
 ////////////////
 /// Map Data ///
 ////////////////
@@ -197,6 +205,9 @@ void overlay_clear()
 
 
 
+/////////////////////
+/// Tile Contents ///
+/////////////////////
 
 // clear a single tile
 void map_tile_clear(MapTile *tile)
@@ -224,11 +235,6 @@ void map_tile_clear_contents(MapTile *tile)
 	tile->floor_contents = NULL;
 }
 
-
-
-/////////////////////
-/// Tile Contents ///
-/////////////////////
 
 // converts an x,y position to a tile number
 int get_tile_id(int x, int y)

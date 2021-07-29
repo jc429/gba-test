@@ -22,6 +22,7 @@
 
 #define SPR_OFF_Y_DEFAULT 2		// default sprite offset (to make sprites sit on bg)
 
+const int launch_arc[16] = {0, 2, 4, 5, 6, 7, 7, 8, 8, 7, 7, 6, 5, 4, 2, 0};
 
 GameObj *create_gameobj_with_id(u8 obj_id);
 GameObj *gameobj_init();
@@ -788,10 +789,14 @@ void gameobj_update_movement(GameObj *obj)
 	if((offset.y >= GAME_TILE_SIZE) || (offset.y <= -GAME_TILE_SIZE))
 		mov.y = 0;
 
-	gameobj_set_pixel_pos(obj, offset.x, offset.y);	
+	int y_arc = 0;
+	if(gameobj_check_properties(obj, OBJPROP_LAUNCHED))
+		y_arc = launch_arc[clamp(ABS(offset.x),0,16)] - launch_arc[clamp(ABS(offset.x)-1,0,16)];
+	gameobj_set_pixel_pos(obj, offset.x, offset.y-y_arc);
 	
 	if(mov.x == 0 && mov.y == 0)
 	{
+		gameobj_remove_property_flags(obj, OBJPROP_LAUNCHED);
 		gameobj_set_moving(obj, false, 0);
 		gameobj_update_current_tile(obj);
 	}

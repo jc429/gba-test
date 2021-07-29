@@ -12,4 +12,6 @@ void audio_stop_track();
 void audio_play_sound(int sound_id);
 void audio_stop_sounds();
 
+void audio_set_volume(int volume);
+
 #endif //AUDIO_H

@@ -8,7 +8,7 @@
 
 
 void objint_push_gameobj(GameObj *obj, int push_dir);
-void objint_launch_gameobj(GameObj *obj, int launch_dir);
+bool objint_launch_gameobj(GameObj *obj, int launch_dir);
 bool objint_check_floor_tile(GameObj *obj, int tile_x, int tile_y);
 void gameobj_fall(GameObj *obj, int tile_x, int tile_y);
 
